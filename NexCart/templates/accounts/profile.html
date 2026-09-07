@@ -1,0 +1,500 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+My Account & Profile - NexCart
+{% endblock %}
+
+{% block content %}
+<div class="account-portal-container">
+
+    <!-- Breadcrumb Navigation -->
+    <div class="account-breadcrumbs">
+        <a href="{% url 'home' %}"><i class="fa-solid fa-house"></i> Home</a>
+        <span class="crumb-separator">&rsaquo;</span>
+        <span class="crumb-active">My Account</span>
+    </div>
+
+    <!-- ============================================================
+         HERO PROFILE BANNER WITH STATS & AVATAR
+         ============================================================ -->
+    <div class="account-hero-card">
+        <div class="hero-cover-backdrop"></div>
+        <div class="hero-content-wrapper">
+            <div class="hero-user-profile">
+                <div class="hero-avatar-wrap">
+                    {% if user.profile_picture %}
+                        <img src="{{ user.profile_picture.url }}" class="hero-avatar-img" id="heroAvatarPreview" alt="{{ user.get_full_name|default:user.username }}">
+                    {% else %}
+                        <div class="hero-avatar-placeholder" id="heroAvatarPlaceholder">
+                            {{ user.first_name|first|default:user.username|first|upper }}
+                        </div>
+                    {% endif %}
+                    <label for="id_profile_picture" class="avatar-camera-btn" title="Change Profile Picture">
+                        <i class="fa-solid fa-camera"></i>
+                    </label>
+                </div>
+
+                <div class="hero-user-details">
+                    <div class="hero-name-row">
+                        <h1 class="hero-user-name">
+                            {{ user.get_full_name|default:user.username }}
+                        </h1>
+                        <span class="role-badge role-{{ user.role }}">
+                            {% if user.role == 'seller' %}
+                                <i class="fa-solid fa-store"></i> Verified Seller
+                            {% elif user.is_superuser or user.is_staff %}
+                                <i class="fa-solid fa-shield-halved"></i> Administrator
+                            {% else %}
+                                <i class="fa-solid fa-circle-check"></i> Verified Customer
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    <div class="hero-meta-chips">
+                        <span class="meta-chip">
+                            <i class="fa-solid fa-envelope"></i> {{ user.email }}
+                        </span>
+                        {% if user.phone_number %}
+                        <span class="meta-chip">
+                            <i class="fa-solid fa-phone"></i> {{ user.phone_number }}
+                        </span>
+                        {% endif %}
+                        <span class="meta-chip">
+                            <i class="fa-regular fa-calendar-check"></i> Member since {{ user.date_joined|date:"M Y" }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Account KPI Stat Chips -->
+            <div class="hero-kpi-stats">
+                <a href="{% url 'order_list' %}" class="kpi-stat-card">
+                    <div class="kpi-icon icon-orders">
+                        <i class="fa-solid fa-bag-shopping"></i>
+                    </div>
+                    <div class="kpi-info">
+                        <span class="kpi-value">{{ total_orders }}</span>
+                        <span class="kpi-label">Total Orders</span>
+                    </div>
+                </a>
+
+                <a href="{% url 'order_list' %}" class="kpi-stat-card">
+                    <div class="kpi-icon icon-transit">
+                        <i class="fa-solid fa-truck-fast"></i>
+                    </div>
+                    <div class="kpi-info">
+                        <span class="kpi-value">{{ active_orders_count }}</span>
+                        <span class="kpi-label">In Transit</span>
+                    </div>
+                </a>
+
+                <a href="{% url 'address_list' %}" class="kpi-stat-card">
+                    <div class="kpi-icon icon-addresses">
+                        <i class="fa-solid fa-location-dot"></i>
+                    </div>
+                    <div class="kpi-info">
+                        <span class="kpi-value">{{ total_addresses }}</span>
+                        <span class="kpi-label">Saved Addresses</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         MAIN 2-COLUMN ACCOUNT LAYOUT
+         ============================================================ -->
+    <div class="account-grid-layout">
+
+        <!-- =========================================
+             LEFT NAVIGATION & QUICK DETAILS SIDEBAR
+             ========================================= -->
+        <aside class="account-nav-sidebar">
+            <div class="account-sidebar-card">
+                <div class="sidebar-section-title">
+                    <i class="fa-solid fa-sliders"></i> Account Navigation
+                </div>
+                <nav class="account-nav-menu">
+                    <a href="#profile-edit-section" class="account-nav-item active" onclick="switchAccountTab('edit-profile', this)">
+                        <span class="nav-item-icon"><i class="fa-solid fa-user-gear"></i></span>
+                        <span class="nav-item-label">Edit Profile</span>
+                    </a>
+                    <a href="#orders-section" class="account-nav-item" onclick="switchAccountTab('recent-orders', this)">
+                        <span class="nav-item-icon"><i class="fa-solid fa-bag-shopping"></i></span>
+                        <span class="nav-item-label">Recent Orders</span>
+                        <span class="nav-item-badge">{{ total_orders }}</span>
+                    </a>
+                    <a href="{% url 'address_list' %}" class="account-nav-item">
+                        <span class="nav-item-icon"><i class="fa-solid fa-location-dot"></i></span>
+                        <span class="nav-item-label">Delivery Addresses</span>
+                        <span class="nav-item-badge">{{ total_addresses }}</span>
+                    </a>
+                    <a href="{% url 'change_password' %}" class="account-nav-item">
+                        <span class="nav-item-icon"><i class="fa-solid fa-key"></i></span>
+                        <span class="nav-item-label">Change Password</span>
+                    </a>
+                    {% if user.role == 'seller' %}
+                    <a href="{% url 'seller_dashboard' %}" class="account-nav-item nav-seller-highlight">
+                        <span class="nav-item-icon"><i class="fa-solid fa-store"></i></span>
+                        <span class="nav-item-label">Seller Dashboard</span>
+                        <span class="nav-item-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+                    </a>
+                    {% endif %}
+                    {% if user.is_staff or user.is_superuser %}
+                    <a href="{% url 'admin_dashboard' %}" class="account-nav-item nav-admin-highlight">
+                        <span class="nav-item-icon"><i class="fa-solid fa-gauge-high"></i></span>
+                        <span class="nav-item-label">Admin Console</span>
+                        <span class="nav-item-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+                    </a>
+                    {% endif %}
+                </nav>
+            </div>
+
+            <!-- Primary Address Snapshot Card -->
+            <div class="account-sidebar-card address-snapshot-card">
+                <div class="sidebar-card-header">
+                    <h4><i class="fa-solid fa-location-dot"></i> Default Address</h4>
+                    <a href="{% url 'address_list' %}" class="header-link">Manage</a>
+                </div>
+                {% if default_address %}
+                <div class="default-address-box">
+                    <div class="addr-badge-row">
+                        <span class="addr-tag tag-{{ default_address.address_type }}">
+                            {% if default_address.address_type == 'home' %}<i class="fa-solid fa-house"></i> Home{% elif default_address.address_type == 'work' %}<i class="fa-solid fa-briefcase"></i> Work{% else %}<i class="fa-solid fa-location-dot"></i> Other{% endif %}
+                        </span>
+                        <span class="default-star-badge"><i class="fa-solid fa-star"></i> Default</span>
+                    </div>
+                    <strong class="addr-name">{{ default_address.full_name }}</strong>
+                    <p class="addr-text">{{ default_address.address_line_1 }}{% if default_address.address_line_2 %}, {{ default_address.address_line_2 }}{% endif %}</p>
+                    <p class="addr-city">{{ default_address.city }}, {{ default_address.state }} - <strong>{{ default_address.pincode }}</strong></p>
+                    <p class="addr-phone"><i class="fa-solid fa-phone"></i> {{ default_address.phone }}</p>
+                </div>
+                {% else %}
+                <div class="empty-addr-box">
+                    <p>No default address saved yet.</p>
+                    <a href="{% url 'add_address' %}" class="btn-primary btn-sm-block">
+                        <i class="fa-solid fa-plus"></i> Add Address
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Logout Button -->
+            <div class="account-sidebar-card logout-sidebar-card">
+                <button type="button" class="btn-logout-sidebar" onclick="openLogoutModal(event)">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out of NexCart
+                </button>
+            </div>
+        </aside>
+
+        <!-- =========================================
+             RIGHT CONTENT PANELS
+             ========================================= -->
+        <main class="account-content-main">
+
+            <!-- TAB 1: EDIT PROFILE -->
+            <section id="tab-edit-profile" class="account-content-card active-tab">
+                <div class="content-card-header">
+                    <div>
+                        <h2><i class="fa-solid fa-user-pen"></i> Personal Information</h2>
+                        <p>Manage your personal profile details, avatar photo, and contact coordinates.</p>
+                    </div>
+                    <span class="profile-status-pill">
+                        <i class="fa-solid fa-circle-check"></i> Account Verified
+                    </span>
+                </div>
+
+                {% if form.errors %}
+                <div class="profile-errors-alert">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <div>
+                        <strong>Please check the errors below:</strong>
+                        <ul>
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                    <li>{{ field.label }}: {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                {% endif %}
+
+                <form method="POST" enctype="multipart/form-data" class="modern-profile-form" id="profileUpdateForm">
+                    {% csrf_token %}
+
+                    <!-- Avatar Upload & Live Preview Section -->
+                    <div class="avatar-upload-card">
+                        <div class="avatar-current-wrap">
+                            {% if user.profile_picture %}
+                                <img src="{{ user.profile_picture.url }}" id="formAvatarPreview" class="avatar-preview-img" alt="Avatar">
+                            {% else %}
+                                <div class="avatar-preview-placeholder" id="formAvatarPlaceholder">
+                                    {{ user.first_name|first|default:user.username|first|upper }}
+                                </div>
+                            {% endif %}
+                            <label for="id_profile_picture" class="avatar-camera-overlay" title="Upload Photo">
+                                <i class="fa-solid fa-camera"></i>
+                            </label>
+                        </div>
+
+                        <div class="avatar-upload-details">
+                            <div class="avatar-title-row">
+                                <h3>Profile Avatar</h3>
+                                <span class="avatar-format-tag">PNG, JPG, WebP</span>
+                            </div>
+                            <p class="avatar-input-hint">Upload a high-resolution square image (recommended 500 &times; 500px). Maximum file size is 5MB.</p>
+                            <div class="avatar-file-controls">
+                                <label for="id_profile_picture" class="btn-secondary btn-upload-avatar">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i> Choose New Photo
+                                </label>
+                                <span class="file-name-display" id="avatarFileName">No new photo selected</span>
+                                <input type="file" name="profile_picture" id="id_profile_picture" accept="image/*" class="hidden-file-input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Input Fields Grid -->
+                    <div class="form-inputs-grid">
+                        <!-- First Name -->
+                        <div class="form-group">
+                            <label for="id_first_name" class="form-label">
+                                First Name <span class="required-star">*</span>
+                            </label>
+                            <div class="input-with-icon">
+                                <span class="input-icon"><i class="fa-solid fa-user"></i></span>
+                                <input type="text" name="first_name" id="id_first_name" class="form-control" value="{{ user.first_name }}" placeholder="First Name" required>
+                            </div>
+                        </div>
+
+                        <!-- Last Name -->
+                        <div class="form-group">
+                            <label for="id_last_name" class="form-label">
+                                Last Name <span class="required-star">*</span>
+                            </label>
+                            <div class="input-with-icon">
+                                <span class="input-icon"><i class="fa-solid fa-user"></i></span>
+                                <input type="text" name="last_name" id="id_last_name" class="form-control" value="{{ user.last_name }}" placeholder="Last Name" required>
+                            </div>
+                        </div>
+
+                        <!-- Username / Handle (Display) -->
+                        <div class="form-group">
+                            <label class="form-label">Username Handle</label>
+                            <div class="input-with-icon">
+                                <span class="input-icon"><i class="fa-solid fa-at"></i></span>
+                                <input type="text" class="form-control input-readonly" value="{{ user.username }}" readonly disabled>
+                            </div>
+                            <small class="field-hint">Unique NexCart handle associated with your profile.</small>
+                        </div>
+
+                        <!-- Email Address (Display & Verified) -->
+                        <div class="form-group">
+                            <label class="form-label">Email Address</label>
+                            <div class="input-with-icon">
+                                <span class="input-icon"><i class="fa-solid fa-envelope"></i></span>
+                                <input type="email" class="form-control input-readonly" value="{{ user.email }}" readonly disabled>
+                                <span class="input-badge-verified" title="Verified Primary Email">
+                                    <i class="fa-solid fa-circle-check"></i> Verified
+                                </span>
+                            </div>
+                            <small class="field-hint">Primary email used for order confirmations and receipts.</small>
+                        </div>
+
+                        <!-- Phone Number -->
+                        <div class="form-group">
+                            <label for="id_phone_number" class="form-label">Mobile Phone Number</label>
+                            <div class="input-with-icon">
+                                <span class="input-icon"><i class="fa-solid fa-phone"></i></span>
+                                <input type="tel" name="phone_number" id="id_phone_number" class="form-control" value="{{ user.phone_number|default:'' }}" placeholder="e.g. +91 98765 43210">
+                            </div>
+                            <small class="field-hint">Used for SMS order delivery coordination &amp; dispatch OTPs.</small>
+                        </div>
+
+                        <!-- Account Type / Role -->
+                        <div class="form-group">
+                            <label class="form-label">Account Membership Role</label>
+                            <div class="input-with-icon">
+                                <span class="input-icon"><i class="fa-solid fa-id-badge"></i></span>
+                                <input type="text" class="form-control input-readonly" value="{% if user.role == 'seller' %}Verified Marketplace Vendor (Seller){% elif user.is_superuser or user.is_staff %}Platform Administrator{% else %}Standard Verified Customer (Buyer){% endif %}" readonly disabled>
+                            </div>
+                            <small class="field-hint">Defines permissions and portal access on NexCart.</small>
+                        </div>
+                    </div>
+
+                    <!-- Privacy Footnote -->
+                    <div class="profile-privacy-note">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span>Your personal and contact details are safely protected under NexCart Data Privacy protocols.</span>
+                    </div>
+
+                    <!-- Form Action Buttons -->
+                    <div class="profile-form-actions">
+                        <button type="submit" class="btn-primary btn-save-profile">
+                            <i class="fa-solid fa-check"></i> Save Profile Changes
+                        </button>
+                        <a href="{% url 'profile' %}" class="btn-secondary btn-cancel-profile">
+                            <i class="fa-solid fa-rotate-left"></i> Discard Changes
+                        </a>
+                    </div>
+                </form>
+            </section>
+
+            <!-- TAB 2: RECENT ORDERS SNAPSHOT -->
+            <section id="tab-recent-orders" class="account-content-card" style="margin-top: 24px;">
+                <div class="content-card-header">
+                    <div>
+                        <h2><i class="fa-solid fa-bag-shopping"></i> Recent Purchases</h2>
+                        <p>Track delivery milestones or download invoices for your recent orders.</p>
+                    </div>
+                    <a href="{% url 'order_list' %}" class="btn-secondary btn-header-link">
+                        View All Orders ({{ total_orders }}) <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </div>
+
+                {% if recent_orders %}
+                <div class="account-orders-list">
+                    {% for order in recent_orders %}
+                    <div class="account-order-card">
+                        <div class="order-card-top">
+                            <div class="order-top-meta">
+                                <strong>Order #{{ order.order_number }}</strong>
+                                <span class="order-dot">&bull;</span>
+                                <span class="order-time">{{ order.created_at|date:"d M Y, h:i A" }}</span>
+                            </div>
+                            <div class="order-top-status">
+                                <span class="order-status {{ order.status }}">
+                                    {{ order.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="order-items-preview">
+                            {% for item in order.items.all|slice:":3" %}
+                            <div class="order-item-snippet">
+                                {% if item.product and item.product.image %}
+                                    <img src="{{ item.product.image.url }}" alt="{{ item.product_name }}" class="order-snippet-img">
+                                {% else %}
+                                    <div class="order-snippet-placeholder">
+                                        <i class="fa-solid fa-image"></i>
+                                    </div>
+                                {% endif %}
+                                <div class="order-snippet-text">
+                                    <strong>{{ item.product_name }}</strong>
+                                    <span>Qty: {{ item.quantity }} &times; ₹{{ item.price|floatformat:2 }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="order-card-bottom">
+                            <div class="order-bottom-total">
+                                <span>Total Amount:</span>
+                                <strong>₹{{ order.total_amount|floatformat:2 }}</strong>
+                            </div>
+                            <div class="order-bottom-actions">
+                                <a href="{% url 'order_tracking' order.id %}" class="btn-secondary btn-sm-action">
+                                    <i class="fa-solid fa-truck-fast"></i> Track
+                                </a>
+                                <a href="{% url 'view_invoice' order.id %}" target="_blank" class="btn-secondary btn-sm-action">
+                                    <i class="fa-solid fa-file-invoice"></i> Invoice
+                                </a>
+                                <a href="{% url 'order_detail' order.id %}" class="btn-primary btn-sm-action">
+                                    Details <i class="fa-solid fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-account-orders">
+                    <div class="empty-icon-wrap">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                    </div>
+                    <h3>No Orders Yet</h3>
+                    <p>You haven't placed any orders yet. Discover hot deals and quality products across NexCart.</p>
+                    <a href="{% url 'product_list' %}" class="btn-primary" style="margin-top: 12px;">
+                        <i class="fa-solid fa-store"></i> Start Shopping
+                    </a>
+                </div>
+                {% endif %}
+            </section>
+
+            <!-- TAB 4: SELLER OPPORTUNITY (If not a seller) -->
+            {% if user.role != 'seller' and not user.is_staff and not user.is_superuser %}
+            <section class="seller-promo-card" style="margin-top: 24px;">
+                <div class="seller-promo-content">
+                    <div class="seller-promo-badge">
+                        <i class="fa-solid fa-rocket"></i> NexCart Merchant Program
+                    </div>
+                    <h2>Grow Your Business on NexCart</h2>
+                    <p>Reach thousands of buyers across the country. Register as a verified seller to list catalog products, track real-time sales metrics, and fulfill customer orders.</p>
+                    <a href="{% url 'register' %}?role=seller" class="btn-seller-cta">
+                        <i class="fa-solid fa-store"></i> Become a NexCart Seller &rarr;
+                    </a>
+                </div>
+            </section>
+            {% endif %}
+
+        </main>
+    </div>
+
+</div>
+
+<!-- JavaScript for Live Image Upload Preview -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.getElementById('id_profile_picture');
+        const fileNameDisplay = document.getElementById('avatarFileName');
+        const heroAvatarPreview = document.getElementById('heroAvatarPreview');
+        const heroAvatarPlaceholder = document.getElementById('heroAvatarPlaceholder');
+        const formAvatarPreview = document.getElementById('formAvatarPreview');
+        const formAvatarPlaceholder = document.getElementById('formAvatarPlaceholder');
+
+        if (fileInput) {
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    if (fileNameDisplay) {
+                        fileNameDisplay.textContent = file.name;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const newSrc = event.target.result;
+
+                        // Update hero avatar
+                        if (heroAvatarPreview) {
+                            heroAvatarPreview.src = newSrc;
+                        } else if (heroAvatarPlaceholder) {
+                            heroAvatarPlaceholder.outerHTML = `<img src="${newSrc}" class="hero-avatar-img" id="heroAvatarPreview" alt="Avatar">`;
+                        }
+
+                        // Update form avatar
+                        if (formAvatarPreview) {
+                            formAvatarPreview.src = newSrc;
+                        } else if (formAvatarPlaceholder) {
+                            formAvatarPlaceholder.outerHTML = `<img src="${newSrc}" class="avatar-preview-img" id="formAvatarPreview" alt="Avatar">`;
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+    });
+
+    function switchAccountTab(tabName, element) {
+        // Toggle active menu items
+        const menuItems = document.querySelectorAll('.account-nav-item');
+        menuItems.forEach(item => item.classList.remove('active'));
+        if (element) {
+            element.classList.add('active');
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,324 @@
+{% extends 'base.html' %}
+
+{% block title %}
+All Products - NexCart
+{% endblock %}
+
+{% block content %}
+
+<div class="products-page">
+    <div class="container">
+
+        <h1>All Products</h1>
+
+        <div class="product-layout">
+
+            <!-- Categories Sidebar -->
+            <aside class="category-sidebar">
+                <h3>Categories</h3>
+                <div class="category-list">
+                    <a href="{% url 'product_list' %}" class="category-link {% if not selected_category %}active{% endif %}">
+                        All Products
+                    </a>
+                    {% for category in categories %}
+                    <a href="?category={{ category.slug }}" class="category-link {% if selected_category == category.slug %}active{% endif %}">
+                        {{ category.name }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </aside>
+
+            <!-- Products Section -->
+            <main class="products-section">
+
+                <!-- Toolbar: Result count + Filter button -->
+                <div class="products-toolbar">
+                    <p class="results-info">
+                        Showing {{ page_obj.start_index }}–{{ page_obj.end_index }}
+                        of {{ page_obj.paginator.count }} product{{ page_obj.paginator.count|pluralize }}
+                    </p>
+                    <button type="button" class="filter-toggle-btn" onclick="document.getElementById('filterModal').classList.add('open')">
+                        <i class="fa-solid fa-sliders"></i> Filter &amp; Sort
+                    </button>
+                </div>
+
+                <!-- Active Filters Summary -->
+                {% if query or min_price or max_price or availability or selected_sort %}
+                <div class="active-filters">
+                    <span class="active-filters-label"><i class="fa-solid fa-filter"></i> Filters:</span>
+                    {% if query %}
+                    <span class="filter-tag"><i class="fa-solid fa-magnifying-glass"></i> "{{ query }}"</span>
+                    {% endif %}
+                    {% if min_price %}
+                    <span class="filter-tag">Min: ₹{{ min_price }}</span>
+                    {% endif %}
+                    {% if max_price %}
+                    <span class="filter-tag">Max: ₹{{ max_price }}</span>
+                    {% endif %}
+                    {% if availability == 'in_stock' %}
+                    <span class="filter-tag"><i class="fa-solid fa-circle-check"></i> In Stock</span>
+                    {% endif %}
+                    {% if selected_sort %}
+                    <span class="filter-tag"><i class="fa-solid fa-arrow-down-short-wide"></i> {{ selected_sort }}</span>
+                    {% endif %}
+                    <a href="{% url 'product_list' %}{% if selected_category %}?category={{ selected_category }}{% endif %}" class="clear-filters-inline"><i class="fa-solid fa-xmark"></i> Clear</a>
+                </div>
+                {% endif %}
+
+                {% if search_query %}
+                <div class="search-results-header">
+                    <p>Search Results for <strong>"{{ search_query }}"</strong></p>
+                    <a href="{% url 'product_list' %}" class="btn-reset"><i class="fa-solid fa-arrow-rotate-left"></i> Clear Search</a>
+                </div>
+                {% endif %}
+
+                {% if products %}
+                <div class="product-grid">
+                    {% for product in products %}
+                    <div class="product-card">
+
+                        <div class="product-image-wrap">
+                            <!-- Product Image -->
+                            {% if product.image %}
+                            <img src="{{ product.image.url }}" alt="{{ product.name }}">
+                            {% else %}
+                            <div class="product-image-placeholder">
+                                <i class="fa-solid fa-image"></i>
+                            </div>
+                            {% endif %}
+
+                            <!-- Stock Badge -->
+                            {% if product.is_in_stock %}
+                            <div class="stock-badge in-stock">In Stock</div>
+                            {% else %}
+                            <div class="stock-badge out-of-stock">Out of Stock</div>
+                            {% endif %}
+
+                            <!-- Discount Badge -->
+                            {% if product.discount_percentage > 0 %}
+                            <div class="discount-badge">-{{ product.discount_percentage|floatformat:0 }}%</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="product-info">
+
+                            <p class="product-category">{{ product.category.name }}</p>
+                            <h3>{{ product.name }}</h3>
+
+                            {% if product.category.name == 'Books & Education' and product.author %}
+                            <p class="detail-label">{{ product.author }}</p>
+                            {% elif product.brand %}
+                            <p class="detail-label">{{ product.brand }}</p>
+                            {% endif %}
+
+                            <div class="product-price">
+                                {% if product.discount_percentage > 0 %}
+                                <span class="old-price">₹{{ product.price }}</span>
+                                <span class="new-price">₹{{ product.discounted_price|floatformat:2 }}</span>
+                                {% else %}
+                                <span class="new-price">₹{{ product.price }}</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="product-actions">
+                                <a href="{% url 'product_detail' product.slug %}" class="product-btn btn-secondary">View Details</a>
+                                {% if product.is_in_stock %}
+                                <a href="{% url 'add_to_cart' product.id %}" class="product-btn btn-primary"><i class="fa-solid fa-cart-plus"></i> Add to Cart</a>
+                                {% else %}
+                                <button class="product-btn btn-disabled" disabled>Sold Out</button>
+                                {% endif %}
+                            </div>
+
+                        </div>
+
+                    </div>
+                    {% endfor %}
+                </div>
+
+
+                <!-- PAGINATION -->
+                {% if page_obj.paginator.num_pages > 1 %}
+                <div class="pagination">
+
+                    {% if page_obj.has_previous %}
+                    <a
+                        href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}"
+                        class="page-link page-prev"
+                    >
+                        <i class="fa-solid fa-chevron-left"></i> Previous
+                    </a>
+                    {% endif %}
+
+                    <div class="page-numbers">
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <span class="page-link current-page">{{ num }}</span>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <a
+                                    href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}"
+                                    class="page-link"
+                                >
+                                    {{ num }}
+                                </a>
+                            {% elif num == 1 or num == page_obj.paginator.num_pages %}
+                                <a
+                                    href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}"
+                                    class="page-link"
+                                >
+                                    {{ num }}
+                                </a>
+                            {% elif num == page_obj.number|add:'-3' or num == page_obj.number|add:'3' %}
+                                <span class="page-link page-dots">…</span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    {% if page_obj.has_next %}
+                    <a
+                        href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}"
+                        class="page-link page-next"
+                    >
+                        Next <i class="fa-solid fa-chevron-right"></i>
+                    </a>
+                    {% endif %}
+
+                </div>
+                {% endif %}
+
+
+                {% else %}
+                <div class="no-products">
+                    <p>No products found. Try a different search or category.</p>
+                    <a href="{% url 'product_list' %}" class="btn">Browse All Products</a>
+                </div>
+                {% endif %}
+
+            </main>
+
+        </div>
+
+    </div>
+</div>
+
+
+<!-- ========================================
+     FILTER MODAL
+========================================= -->
+
+<div class="filter-modal-overlay" id="filterModal">
+    <div class="filter-modal">
+
+        <div class="filter-modal-header">
+            <h2>Filter &amp; Sort</h2>
+            <button type="button" class="filter-modal-close" onclick="document.getElementById('filterModal').classList.remove('open')">✕</button>
+        </div>
+
+        <form method="GET" action="{% url 'product_list' %}" class="filter-modal-body">
+
+            <!-- Preserve current category -->
+            {% if selected_category %}
+            <input type="hidden" name="category" value="{{ selected_category }}">
+            {% endif %}
+
+            <!-- SEARCH -->
+            <div class="filter-modal-group">
+                <label>Search Products</label>
+                <input
+                    type="text"
+                    name="q"
+                    placeholder="e.g. laptop, phone, book..."
+                    value="{{ query|default:'' }}"
+                >
+            </div>
+
+            <!-- PRICE RANGE -->
+            <div class="filter-modal-group">
+                <label>Price Range</label>
+                <div class="filter-modal-price">
+                    <input
+                        type="number"
+                        name="min_price"
+                        placeholder="Min ₹"
+                        value="{{ min_price|default:'' }}"
+                        min="0"
+                    >
+                    <span>to</span>
+                    <input
+                        type="number"
+                        name="max_price"
+                        placeholder="Max ₹"
+                        value="{{ max_price|default:'' }}"
+                        min="0"
+                    >
+                </div>
+            </div>
+
+            <!-- AVAILABILITY -->
+            <div class="filter-modal-group">
+                <label class="filter-modal-checkbox">
+                    <input
+                        type="checkbox"
+                        name="availability"
+                        value="in_stock"
+                        {% if availability == 'in_stock' %}checked{% endif %}
+                    >
+                    <span>Show only In Stock products</span>
+                </label>
+            </div>
+
+            <!-- SORT -->
+            <div class="filter-modal-group">
+                <label>Sort By</label>
+                <select name="sort">
+                    <option value="">Recommended</option>
+                    <option value="newest" {% if selected_sort == 'newest' %}selected{% endif %}>
+                        Newest First
+                    </option>
+                    <option value="price_low" {% if selected_sort == 'price_low' %}selected{% endif %}>
+                        Price: Low to High
+                    </option>
+                    <option value="price_high" {% if selected_sort == 'price_high' %}selected{% endif %}>
+                        Price: High to Low
+                    </option>
+                    <option value="name_az" {% if selected_sort == 'name_az' %}selected{% endif %}>
+                        Name: A to Z
+                    </option>
+                    <option value="name_za" {% if selected_sort == 'name_za' %}selected{% endif %}>
+                        Name: Z to A
+                    </option>
+                </select>
+            </div>
+
+            <!-- ACTIONS -->
+            <div class="filter-modal-actions">
+                <button type="submit" class="filter-modal-apply">Apply Filters</button>
+                <a
+                    href="{% url 'product_list' %}{% if selected_category %}?category={{ selected_category }}{% endif %}"
+                    class="filter-modal-clear"
+                >
+                    Clear All
+                </a>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+<script>
+    // Close modal on overlay click
+    document.getElementById('filterModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.remove('open');
+        }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            document.getElementById('filterModal').classList.remove('open');
+        }
+    });
+</script>
+
+{% endblock %}

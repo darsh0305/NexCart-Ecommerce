@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+My Orders - NexCart
+{% endblock %}
+
+{% block content %}
+<div class="container orders-page">
+
+    <!-- Page Header -->
+    <div class="page-header orders-page-header">
+        <div>
+            <h1><i class="fa-solid fa-bag-shopping"></i> My Orders</h1>
+            <p>View, track, and manage all your NexCart purchases.</p>
+        </div>
+        <a href="{% url 'product_list' %}" class="btn-secondary" style="padding: 10px 18px; font-size: 14px;">
+            <i class="fa-solid fa-store"></i> Browse More Products
+        </a>
+    </div>
+
+    {% if orders %}
+        <div class="orders-list">
+            {% for order in orders %}
+                <div class="order-card" id="order-card-{{ order.id }}">
+                    <!-- Order Card Header -->
+                    <div class="order-card-header">
+                        <div class="order-header-meta">
+                            <div class="order-id-wrap">
+                                <h3>Order #{{ order.order_number }}</h3>
+                                <span class="order-meta-dot">&bull;</span>
+                                <span class="order-date">{{ order.created_at|date:"d M Y, h:i A" }}</span>
+                            </div>
+                            <div class="order-address-preview">
+                                <i class="fa-solid fa-location-dot"></i> Delivered to: <strong>{{ order.address.full_name }}</strong> ({{ order.address.city }}, {{ order.address.pincode }})
+                            </div>
+                        </div>
+
+                        <div class="order-badges-wrap">
+                            <!-- Order / Delivery Status -->
+                            <span class="order-status {{ order.status }}">
+                                {{ order.get_status_display }}
+                            </span>
+
+                            <!-- Payment Status -->
+                            <span class="payment-badge {{ order.payment_status }}">
+                                {{ order.get_payment_method_display }}: {{ order.get_payment_status_display }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Purchased Products in this Order -->
+                    <div class="order-card-body">
+                        <div class="order-items-list">
+                            {% for item in order.items.all %}
+                                <div class="order-item">
+                                    <div class="order-item-main">
+                                        <div class="order-item-image-box">
+                                            {% if item.product and item.product.image %}
+                                                <a href="{% url 'product_detail' item.product.slug %}">
+                                                    <img src="{{ item.product.image.url }}" alt="{{ item.product_name }}" class="order-item-img">
+                                                </a>
+                                            {% else %}
+                                                <div class="order-item-placeholder">
+                                                    <i class="fa-solid fa-image"></i>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="order-item-info">
+                                            <h4>
+                                                {% if item.product %}
+                                                    <a href="{% url 'product_detail' item.product.slug %}" class="order-product-link">
+                                                        {{ item.product_name }}
+                                                    </a>
+                                                {% else %}
+                                                    {{ item.product_name }}
+                                                {% endif %}
+                                            </h4>
+
+                                            <div class="order-item-meta-row">
+                                                {% if item.size %}
+                                                <span class="order-size-tag">
+                                                    Size: <strong>{{ item.size }}</strong>
+                                                </span>
+                                                {% endif %}
+                                                <span class="order-seller-tag">
+                                                    <i class="fa-solid fa-store"></i> Sold by: 
+                                                    {% if item.product and item.product.seller and item.product.seller.seller_profile %}
+                                                        <strong>{{ item.product.seller.seller_profile.store_name }}</strong>
+                                                    {% elif item.product and item.product.seller %}
+                                                        <strong>{{ item.product.seller.username }}</strong>
+                                                    {% else %}
+                                                        <strong>NexCart Direct</strong>
+                                                    {% endif %}
+                                                </span>
+                                                <span class="order-qty-tag">
+                                                    Qty: {{ item.quantity }} &times; ₹{{ item.price|floatformat:2 }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="order-item-price">
+                                        <strong>₹{{ item.total_price|floatformat:2 }}</strong>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Order Card Footer & Actions -->
+                    <div class="order-card-footer">
+                        <div class="order-footer-summary">
+                            <div class="summary-stat">
+                                <span class="stat-label">Total Items</span>
+                                <strong class="stat-value">{{ order.items.count }}</strong>
+                            </div>
+                            <div class="summary-stat">
+                                <span class="stat-label">Total Amount</span>
+                                <strong class="stat-value text-highlight">₹{{ order.total_amount|floatformat:2 }}</strong>
+                            </div>
+                            <div class="summary-stat">
+                                <span class="stat-label">Payment</span>
+                                <strong class="stat-value">{{ order.get_payment_method_display }}</strong>
+                            </div>
+                        </div>
+
+                        <div class="order-card-actions">
+                            <!-- Track Order -->
+                            <a
+                                href="{% url 'order_tracking' order.id %}"
+                                class="btn-secondary btn-order-action btn-track-order"
+                                title="Live delivery timeline tracking"
+                            >
+                                <i class="fa-solid fa-truck-fast"></i> Track Order
+                            </a>
+
+                            <!-- View Invoice -->
+                            <a
+                                href="{% url 'view_invoice' order.id %}"
+                                class="btn-secondary btn-order-action"
+                                target="_blank"
+                                title="View Official Tax Invoice"
+                            >
+                                <i class="fa-solid fa-file-invoice"></i> Invoice
+                            </a>
+
+                            <!-- Reorder -->
+                            <a
+                                href="{% url 'reorder_order' order.id %}"
+                                class="btn-secondary btn-order-action btn-reorder"
+                                title="Reorder products in this order"
+                            >
+                                <i class="fa-solid fa-rotate-right"></i> Reorder
+                            </a>
+
+                            <!-- Cancel Order (If allowed) -->
+                            {% if order.status == 'pending' or order.status == 'confirmed' or order.status == 'processing' %}
+                                <button
+                                    type="button"
+                                    class="btn-danger btn-order-action btn-cancel"
+                                    onclick="openOrderCancelModal('{{ order.id }}', '{{ order.order_number }}', '{% url 'cancel_order' order.id %}')"
+                                    title="Cancel this order"
+                                >
+                                    <i class="fa-solid fa-ban"></i> Cancel Order
+                                </button>
+                            {% endif %}
+
+                            <!-- View Order Details -->
+                            <a
+                                href="{% url 'order_detail' order.id %}"
+                                class="btn-primary btn-order-action"
+                            >
+                                View Details <i class="fa-solid fa-arrow-right"></i>
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <!-- Empty State -->
+        <div class="empty-orders-card">
+            <div class="empty-orders-icon" style="font-size: 48px; color: var(--slate-light); margin-bottom: 16px;">
+                <i class="fa-solid fa-boxes-stacked"></i>
+            </div>
+            <h2>No Orders Found</h2>
+            <p>You haven't placed any orders on NexCart yet. Discover great deals and top quality products from verified sellers.</p>
+            <a href="{% url 'product_list' %}" class="btn-primary" style="padding: 12px 28px; font-size: 15px;">
+                <i class="fa-solid fa-bag-shopping"></i> Start Shopping Now
+            </a>
+        </div>
+    {% endif %}
+
+</div>
+
+<!-- ============================================================
+     CANCEL ORDER CONFIRMATION MODAL GUI
+============================================================ -->
+<div id="cancelOrderModal" class="logout-modal-overlay" aria-hidden="true" role="dialog" aria-labelledby="cancelOrderModalTitle">
+    <div class="logout-modal-card">
+        <button type="button" class="logout-modal-close-btn" onclick="closeOrderCancelModal()" aria-label="Close">✕</button>
+        <div class="logout-modal-icon-wrap" style="background: #FEE2E2;">
+            <div class="logout-modal-icon" style="color: #DC2626;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+            </div>
+        </div>
+        <div class="logout-modal-content">
+            <h3 id="cancelOrderModalTitle">Cancel Order</h3>
+            <p>Are you sure you want to cancel order <strong id="cancelModalOrderNumber"></strong>? The reserved products will be returned to stock.</p>
+        </div>
+        <div class="logout-modal-actions">
+            <button type="button" class="btn-modal-cancel" onclick="closeOrderCancelModal()">
+                Keep Order
+            </button>
+            <form id="cancelOrderForm" method="POST" action="" class="logout-form">
+                {% csrf_token %}
+                <button type="submit" class="btn-danger" style="padding: 11px 20px; font-weight: 700;">
+                    Yes, Cancel Order
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openOrderCancelModal(orderId, orderNumber, cancelUrl) {
+    document.getElementById('cancelModalOrderNumber').textContent = '#' + orderNumber;
+    document.getElementById('cancelOrderForm').action = cancelUrl;
+    const modal = document.getElementById('cancelOrderModal');
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
+}
+
+function closeOrderCancelModal() {
+    const modal = document.getElementById('cancelOrderModal');
+    modal.classList.remove('active');
+    modal.setAttribute('aria-hidden', 'true');
+}
+
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeOrderCancelModal();
+    }
+});
+</script>
+{% endblock %}

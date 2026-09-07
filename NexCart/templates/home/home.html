@@ -1,0 +1,163 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+NexCart - Online Marketplace
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero Section -->
+<section class="hero">
+    <!-- Ambient Animated Background Glows -->
+    <div class="hero-ambient-glow" aria-hidden="true">
+        <div class="hero-glow-blob hero-glow-blob-1"></div>
+        <div class="hero-glow-blob hero-glow-blob-2"></div>
+    </div>
+
+    <div class="hero-content">
+
+        <img src="{% static 'images/logo.jpeg' %}" alt="NexCart" class="hero-logo">
+
+        <span class="hero-eyebrow"><i class="fa-solid fa-sparkles"></i> Next Level Shopping</span>
+
+        <h1>Welcome to NexCart</h1>
+        <p>Discover products from verified sellers in one trusted online marketplace. Shop with confidence, save more.</p>
+        <a href="{% url 'product_list' %}" class="btn btn-shine">
+            <i class="fa-solid fa-bag-shopping"></i> Start Shopping
+        </a>
+    </div>
+</section>
+
+<!-- Categories Section -->
+<section class="categories">
+    <div class="container">
+        <h2>Shop by Category</h2>
+        <div class="category-grid">
+            {% for category in categories %}
+            <a href="{% url 'product_list' %}?category={{ category.slug }}" class="category-card">
+                <div class="category-icon-wrap cat-color-{{ forloop.counter|default:1 }}">
+                    {% if 'Elect' in category.name or 'Gadget' in category.name %}
+                        <i class="fa-solid fa-laptop"></i>
+                    {% elif 'Fash' in category.name or 'Cloth' in category.name %}
+                        <i class="fa-solid fa-shirt"></i>
+                    {% elif 'Book' in category.name or 'Edu' in category.name %}
+                        <i class="fa-solid fa-book-open"></i>
+                    {% elif 'Sport' in category.name or 'Fit' in category.name %}
+                        <i class="fa-solid fa-dumbbell"></i>
+                    {% elif 'Home' in category.name or 'Kitch' in category.name %}
+                        <i class="fa-solid fa-couch"></i>
+                    {% elif 'Beaut' in category.name %}
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    {% else %}
+                        <i class="fa-solid fa-tags"></i>
+                    {% endif %}
+                </div>
+                <h3>{{ category.name }}</h3>
+                <p>Browse our collection of {{ category.name|lower }} products.</p>
+            </a>
+            {% empty %}
+            <div class="category-card">
+                <div class="category-icon-wrap cat-color-1">
+                    <i class="fa-solid fa-laptop"></i>
+                </div>
+                <h3>Electronics</h3>
+                <p>Discover the latest electronics and gadgets.</p>
+            </div>
+            <div class="category-card">
+                <div class="category-icon-wrap cat-color-2">
+                    <i class="fa-solid fa-shirt"></i>
+                </div>
+                <h3>Fashion</h3>
+                <p>Explore trending fashion and apparel.</p>
+            </div>
+            <div class="category-card">
+                <div class="category-icon-wrap cat-color-3">
+                    <i class="fa-solid fa-book-open"></i>
+                </div>
+                <h3>Books & Education</h3>
+                <p>Learn and grow with our book collection.</p>
+            </div>
+            <div class="category-card">
+                <div class="category-icon-wrap cat-color-4">
+                    <i class="fa-solid fa-dumbbell"></i>
+                </div>
+                <h3>Sports & Fitness</h3>
+                <p>Everything you need for your fitness journey.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Featured Products Section -->
+{% if featured_products %}
+<section class="products-section">
+    <div class="container">
+        <h2>Featured Products</h2>
+        <div class="product-grid">
+            {% for product in featured_products %}
+            <div class="product-card">
+
+                <div class="product-image-wrap">
+                    <!-- Product Image -->
+                    {% if product.image %}
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}">
+                    {% else %}
+                    <div class="product-image-placeholder">
+                        <i class="fa-solid fa-image"></i>
+                    </div>
+                    {% endif %}
+
+                    <!-- Stock Badge -->
+                    {% if product.is_in_stock %}
+                    <div class="stock-badge in-stock">In Stock</div>
+                    {% else %}
+                    <div class="stock-badge out-of-stock">Out of Stock</div>
+                    {% endif %}
+
+                    <!-- Discount Badge -->
+                    {% if product.discount_percentage > 0 %}
+                    <div class="discount-badge">-{{ product.discount_percentage|floatformat:0 }}%</div>
+                    {% endif %}
+                </div>
+
+                <div class="product-info">
+
+                    <p class="product-category">{{ product.category.name }}</p>
+                    <h3>{{ product.name }}</h3>
+
+                    {% if product.category.name == 'Books & Education' and product.author %}
+                    <p class="detail-label">{{ product.author }}</p>
+                    {% elif product.brand %}
+                    <p class="detail-label">{{ product.brand }}</p>
+                    {% endif %}
+
+                    <div class="product-price">
+                        {% if product.discount_percentage > 0 %}
+                        <span class="old-price">₹{{ product.price }}</span>
+                        <span class="new-price">₹{{ product.discounted_price|floatformat:2 }}</span>
+                        {% else %}
+                        <span class="new-price">₹{{ product.price }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="product-actions">
+                        <a href="{% url 'product_detail' product.slug %}" class="product-btn btn-secondary">View Details</a>
+                        {% if product.is_in_stock %}
+                        <a href="{% url 'add_to_cart' product.id %}" class="product-btn btn-primary"><i class="fa-solid fa-cart-plus"></i> Add to Cart</a>
+                        {% else %}
+                        <button class="product-btn btn-disabled" disabled>Sold Out</button>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

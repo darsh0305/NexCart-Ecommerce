@@ -1,0 +1,210 @@
+{% load static %}
+
+<nav class="navbar">
+
+<div class="container">
+
+    <!-- ==============================
+         LOGO
+    =============================== -->
+
+    <div class="navbar-brand">
+
+        <a href="{% url 'home' %}">
+            <img src="{% static 'images/logo.jpeg' %}" alt="NexCart" class="brand-logo">
+            <span class="brand-name">NexCart</span>
+        </a>
+
+    </div>
+
+
+    <!-- ==============================
+         SEARCH BAR
+    =============================== -->
+
+    <div class="navbar-search">
+
+        <form
+            method="GET"
+            action="{% url 'product_list' %}"
+        >
+
+            <input
+                type="text"
+                name="search"
+                placeholder="Search products..."
+                value="{% if search %}{{ search }}{% elif request.GET.search %}{{ request.GET.search }}{% elif request.GET.q %}{{ request.GET.q }}{% endif %}"
+            >
+
+            <button type="submit" aria-label="Search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+
+        </form>
+
+    </div>
+
+
+    <!-- ==============================
+         MOBILE MENU BUTTON
+    =============================== -->
+
+    <button
+        class="mobile-menu-button"
+        id="mobileMenuButton"
+        type="button"
+        aria-label="Toggle Navigation Menu"
+    >
+        <i class="fa-solid fa-bars"></i>
+    </button>
+
+
+    <!-- ==============================
+         NAVIGATION LINKS
+    =============================== -->
+
+    <div class="navbar-links" id="navbarMenu">
+
+        {% if user.is_authenticated %}
+
+            {% if user.is_staff or user.is_superuser %}
+                <a href="{% url 'admin_dashboard' %}" class="admin-nav-badge" title="Platform Administration">
+                    <i class="fa-solid fa-gauge-high"></i> Admin Dashboard
+                </a>
+            {% endif %}
+
+            {% if user.role == 'seller' %}
+                <!-- ==============================
+                     SELLER SPECIFIC NAVIGATION
+                =============================== -->
+                <a href="{% url 'seller_dashboard' %}" class="seller-nav-badge">
+                    <i class="fa-solid fa-store"></i> Seller Dashboard
+                </a>
+
+                <a href="{% url 'seller_products' %}">
+                    <i class="fa-solid fa-boxes-stacked"></i> Products
+                </a>
+
+                <a href="{% url 'seller_orders' %}">
+                    <i class="fa-solid fa-truck-ramp-box"></i> Orders
+                </a>
+
+                <a href="{% url 'seller_sales_report' %}">
+                    <i class="fa-solid fa-chart-line"></i> Reports
+                </a>
+
+                <a href="{% url 'home' %}" title="View Marketplace Storefront">
+                    <i class="fa-solid fa-shop"></i> Storefront
+                </a>
+
+                <a href="{% url 'profile' %}">
+                    <i class="fa-solid fa-circle-user"></i> Account
+                </a>
+
+            {% else %}
+                <!-- ==============================
+                     CUSTOMER NAVIGATION (NO SELLER LINKS)
+                =============================== -->
+                <a href="{% url 'home' %}">
+                    <i class="fa-solid fa-house"></i> Home
+                </a>
+
+                <a href="{% url 'product_list' %}">
+                    <i class="fa-solid fa-layer-group"></i> Products
+                </a>
+
+                <a href="{% url 'cart_detail' %}">
+                    <i class="fa-solid fa-cart-shopping"></i> Cart
+                </a>
+
+                <a href="{% url 'order_list' %}">
+                    <i class="fa-solid fa-bag-shopping"></i> My Orders
+                </a>
+
+
+                <a href="{% url 'profile' %}">
+                    <i class="fa-solid fa-circle-user"></i> My Account
+                </a>
+
+
+            {% endif %}
+
+            <!-- ==============================
+                 LOGOUT
+            =============================== -->
+
+            <button
+                type="button"
+                class="logout-button"
+                onclick="openLogoutModal(event)"
+            >
+                <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+            </button>
+
+        {% else %}
+
+            <!-- ==============================
+                 PUBLIC / GUEST NAVIGATION
+            =============================== -->
+
+            <a href="{% url 'home' %}">
+                <i class="fa-solid fa-house"></i> Home
+            </a>
+
+            <a href="{% url 'product_list' %}">
+                <i class="fa-solid fa-layer-group"></i> Products
+            </a>
+
+            <a href="{% url 'login' %}">
+                <i class="fa-solid fa-right-to-bracket"></i> Login
+            </a>
+
+            <a
+                href="{% url 'register' %}"
+                class="signup-button"
+            >
+                <i class="fa-solid fa-user-plus"></i> Sign Up
+            </a>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</nav>
+
+{% if user.is_authenticated %}
+<!-- ==============================
+     LOGOUT CONFIRMATION MODAL GUI
+=============================== -->
+<div id="logoutModal" class="logout-modal-overlay" aria-hidden="true" role="dialog" aria-labelledby="logoutModalTitle">
+    <div class="logout-modal-card">
+        <button type="button" class="logout-modal-close-btn" onclick="closeLogoutModal()" aria-label="Close">✕</button>
+        <div class="logout-modal-icon-wrap">
+            <div class="logout-modal-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+            </div>
+        </div>
+        <div class="logout-modal-content">
+            <h3 id="logoutModalTitle">Confirm Logout</h3>
+            <p>Are you sure you want to log out of your <strong>NexCart</strong> account?</p>
+        </div>
+        <div class="logout-modal-actions">
+            <button type="button" class="btn-modal-cancel" onclick="closeLogoutModal()">
+                Cancel
+            </button>
+            <form method="POST" action="{% url 'logout' %}" class="logout-form">
+                {% csrf_token %}
+                <button type="submit" class="btn-modal-confirm">
+                    Yes, Log Out
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}

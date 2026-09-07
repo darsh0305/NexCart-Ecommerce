@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Seller Dashboard - NexCart
+{% endblock %}
+
+{% block content %}
+<div class="seller-container">
+
+    <div class="seller-header">
+        <div>
+            <span class="seller-badge"><i class="fa-solid fa-store"></i> Seller Portal</span>
+            <h1>{{ request.user.seller_profile.store_name }} Dashboard</h1>
+            <p>Manage your inventory, monitor orders, and track your revenue in real-time.</p>
+        </div>
+        <div class="seller-actions">
+            <a href="{% url 'seller_product_add' %}" class="btn-primary">
+                <i class="fa-solid fa-circle-plus"></i> Add New Product
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="seller-stats">
+        <div class="stat-card">
+            <div class="stat-icon icon-products">
+                <i class="fa-solid fa-boxes-stacked"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_products }}</h3>
+                <p>Total Products</p>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon icon-orders">
+                <i class="fa-solid fa-bag-shopping"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_orders }}</h3>
+                <p>Total Orders</p>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon icon-revenue">
+                <i class="fa-solid fa-indian-rupee-sign"></i>
+            </div>
+            <div class="stat-info">
+                <h3>₹{{ total_sales|floatformat:2 }}</h3>
+                <p>Total Revenue</p>
+            </div>
+        </div>
+
+        <div class="stat-card {% if low_stock_products > 0 %}stat-warning{% endif %}">
+            <div class="stat-icon icon-warning">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ low_stock_products }}</h3>
+                <p>Low Stock Items</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seller Quick Actions / Menu Cards -->
+    <div class="seller-section-title">
+        <h2>Seller Management</h2>
+    </div>
+
+    <div class="seller-menu">
+        <a href="{% url 'seller_product_add' %}" class="seller-menu-card">
+            <div class="menu-card-header">
+                <span class="menu-icon"><i class="fa-solid fa-circle-plus"></i></span>
+                <h3>Add Product</h3>
+            </div>
+            <p>Publish a new item to the NexCart marketplace catalog.</p>
+            <span class="menu-link-text">Create listing <i class="fa-solid fa-arrow-right"></i></span>
+        </a>
+
+        <a href="{% url 'seller_products' %}" class="seller-menu-card">
+            <div class="menu-card-header">
+                <span class="menu-icon"><i class="fa-solid fa-boxes-stacked"></i></span>
+                <h3>My Products</h3>
+            </div>
+            <p>Edit pricing, manage inventory stock, and update details.</p>
+            <span class="menu-link-text">View catalog ({{ total_products }}) <i class="fa-solid fa-arrow-right"></i></span>
+        </a>
+
+        <a href="{% url 'seller_orders' %}" class="seller-menu-card">
+            <div class="menu-card-header">
+                <span class="menu-icon"><i class="fa-solid fa-truck-ramp-box"></i></span>
+                <h3>View Orders</h3>
+            </div>
+            <p>Track order fulfillment, buyer details, and shipments.</p>
+            <span class="menu-link-text">Manage orders ({{ total_orders }}) <i class="fa-solid fa-arrow-right"></i></span>
+        </a>
+
+        <a href="{% url 'seller_sales_report' %}" class="seller-menu-card">
+            <div class="menu-card-header">
+                <span class="menu-icon"><i class="fa-solid fa-chart-line"></i></span>
+                <h3>Sales Reports</h3>
+            </div>
+            <p>Analyze sales metrics, gross revenues, and performance stats.</p>
+            <span class="menu-link-text">View analytics <i class="fa-solid fa-arrow-right"></i></span>
+        </a>
+    </div>
+
+    <!-- Recent Orders Section -->
+    {% if recent_orders %}
+    <div class="seller-recent-orders">
+        <div class="section-header-row">
+            <h2>Recent Orders</h2>
+            <a href="{% url 'seller_orders' %}" class="view-all-link">View All Orders →</a>
+        </div>
+        <div class="table-responsive">
+            <table class="seller-table">
+                <thead>
+                    <tr>
+                        <th>Order #</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Payment</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in recent_orders %}
+                    <tr>
+                        <td><strong>{{ order.order_number }}</strong></td>
+                        <td>{{ order.created_at|date:"d M Y, h:i A" }}</td>
+                        <td><span class="order-status {{ order.status }}">{{ order.get_status_display }}</span></td>
+                        <td><span class="payment-badge {{ order.payment_status }}">{{ order.get_payment_status_display }}</span></td>
+                        <td>
+                            <a href="{% url 'seller_orders' %}" class="table-action-btn">Details</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

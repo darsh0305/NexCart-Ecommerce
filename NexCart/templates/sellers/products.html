@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block title %}
+My Products - NexCart Seller
+{% endblock %}
+
+{% block content %}
+<div class="seller-container">
+
+    <div class="seller-header">
+        <div>
+            <div class="breadcrumbs">
+                <a href="{% url 'seller_dashboard' %}">Dashboard</a> &rsaquo; <span>My Products</span>
+            </div>
+            <h1>Product Inventory</h1>
+            <p>Manage your active listings, inventory quantities, and prices.</p>
+        </div>
+        <div class="seller-actions">
+            <a href="{% url 'seller_product_add' %}" class="btn-primary">
+                <i class="fa-solid fa-circle-plus"></i> Add Product
+            </a>
+        </div>
+    </div>
+
+    {% if products %}
+    <div class="seller-card">
+        <div class="table-responsive">
+            <table class="seller-table">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Current Status</th>
+                        <th>Update Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>
+                            <div class="table-product-cell">
+                                {% if product.image %}
+                                <img src="{{ product.image.url }}" alt="{{ product.name }}" class="table-product-img">
+                                {% else %}
+                                <div class="table-product-placeholder">
+                                    <i class="fa-solid fa-image"></i>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <span class="product-table-name">{{ product.name }}</span>
+                                    {% if product.brand %}
+                                    <span class="product-table-brand">{{ product.brand }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="category-pill">{{ product.category.name }}</span>
+                        </td>
+                        <td>
+                            <strong>₹{{ product.selling_price|floatformat:2 }}</strong>
+                            {% if product.discount_percentage > 0 %}
+                            <small class="text-muted" style="text-decoration: line-through; display: block;">₹{{ product.price|floatformat:2 }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>{{ product.stock }}</strong> units
+                        </td>
+                        <td>
+                            {% if product.status == 'active' %}
+                                <span class="badge-status-pill status-active"><i class="fa-solid fa-circle-check"></i> Active</span>
+                            {% elif product.status == 'inactive' %}
+                                <span class="badge-status-pill status-inactive"><i class="fa-solid fa-circle-pause"></i> Inactive</span>
+                            {% elif product.status == 'out_of_stock' %}
+                                <span class="badge-status-pill status-out-of-stock"><i class="fa-solid fa-triangle-exclamation"></i> Out of Stock</span>
+                            {% elif product.status == 'draft' %}
+                                <span class="badge-status-pill status-draft"><i class="fa-solid fa-file-pen"></i> Draft</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <form method="POST" action="{% url 'update_product_status' product.id %}" class="status-inline-form">
+                                {% csrf_token %}
+                                <div class="status-select-wrap">
+                                    <select name="status" class="status-select">
+                                        <option value="active" {% if product.status == 'active' %}selected{% endif %}>Active</option>
+                                        <option value="inactive" {% if product.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                                        <option value="out_of_stock" {% if product.status == 'out_of_stock' %}selected{% endif %}>Out of Stock</option>
+                                        <option value="draft" {% if product.status == 'draft' %}selected{% endif %}>Draft</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="status-update-btn">Update</button>
+                            </form>
+                        </td>
+                        <td>
+                            <div class="table-actions">
+                                <a href="{% url 'seller_product_edit' product.id %}" class="table-btn btn-edit">
+                                    <i class="fa-solid fa-pen"></i> Edit
+                                </a>
+                                <a href="{% url 'seller_product_delete' product.id %}" class="table-btn btn-delete">
+                                    <i class="fa-solid fa-trash-can"></i> Delete
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state-card">
+        <div class="empty-icon" style="font-size: 48px; color: var(--slate-light); margin-bottom: 16px;">
+            <i class="fa-solid fa-boxes-stacked"></i>
+        </div>
+        <h2>No Products Found</h2>
+        <p>You have not added any products to your seller catalog yet.</p>
+        <a href="{% url 'seller_product_add' %}" class="btn-primary">
+            <i class="fa-solid fa-circle-plus"></i> Add Your First Product
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,898 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ product.name }} - NexCart
+{% endblock %}
+
+{% block content %}
+
+<div class="product-detail-container">
+
+    <!-- Breadcrumb Navigation -->
+    <nav class="product-breadcrumbs" aria-label="Breadcrumb">
+        <a href="{% url 'home' %}">Home</a>
+        <span class="breadcrumb-separator">›</span>
+        <a href="{% url 'product_list' %}">Products</a>
+        <span class="breadcrumb-separator">›</span>
+        <a href="{% url 'product_list' %}?category={{ product.category.slug }}">{{ product.category.name }}</a>
+        <span class="breadcrumb-separator">›</span>
+        <span class="breadcrumb-current">{{ product.name|truncatechars:45 }}</span>
+    </nav>
+
+    <div class="product-detail">
+
+        <!-- Product Gallery Column -->
+        <div class="product-gallery">
+
+            <div class="main-product-image-wrap">
+                {% if product.discount_percentage > 0 %}
+                <span class="gallery-badge badge-discount">
+                    <i class="fa-solid fa-fire"></i> {{ product.discount_percentage|floatformat:0 }}% OFF
+                </span>
+                {% elif product.is_featured %}
+                <span class="gallery-badge badge-featured">
+                    <i class="fa-solid fa-star"></i> Featured
+                </span>
+                {% endif %}
+
+                <div class="main-product-image">
+                    {% if product.image %}
+                        <img id="mainProductImage" src="{{ product.image.url }}" alt="{{ product.name }}">
+                    {% elif product.images.first %}
+                        <img id="mainProductImage" src="{{ product.images.first.image.url }}" alt="{{ product.name }}">
+                    {% else %}
+                        <div class="product-image-placeholder">
+                            <i class="fa-solid fa-image"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="zoom-hint-tag"><i class="fa-solid fa-magnifying-glass-plus"></i> Click to zoom</div>
+            </div>
+
+            {% if product.image or product.images.all|length > 0 %}
+            <div class="thumbnail-row">
+                <button type="button" class="thumb-nav thumb-nav-left" onclick="scrollThumbnails(-1)" aria-label="Previous thumbnails">‹</button>
+
+                <div class="product-thumbnails" id="productThumbnails">
+                    {% if product.image %}
+                    <button
+                        type="button"
+                        class="thumbnail-button active"
+                        data-image="{{ product.image.url }}"
+                        data-index="0"
+                        aria-label="Thumbnail 1"
+                    >
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}">
+                    </button>
+                    {% endif %}
+
+                    {% for product_image in product.images.all %}
+                    <button
+                        type="button"
+                        class="thumbnail-button"
+                        data-image="{{ product_image.image.url }}"
+                        data-index="{% if product.image %}{{ forloop.counter }}{% else %}{{ forloop.counter0 }}{% endif %}"
+                        aria-label="Thumbnail {{ forloop.counter|add:1 }}"
+                    >
+                        <img src="{{ product_image.image.url }}" alt="{{ product_image.alt_text|default:product.name }}">
+                    </button>
+                    {% endfor %}
+                </div>
+
+                <button type="button" class="thumb-nav thumb-nav-right" onclick="scrollThumbnails(1)" aria-label="Next thumbnails">›</button>
+            </div>
+            {% endif %}
+
+        </div>
+
+        <!-- Product Info Column -->
+        <div class="product-detail-info">
+
+            <!-- Meta Badges Row -->
+            <div class="detail-meta-row">
+                <a href="{% url 'product_list' %}?category={{ product.category.slug }}" class="detail-category-badge">
+                    {{ product.category.name }}
+                </a>
+
+                {% if product.is_in_stock %}
+                    {% if product.is_low_stock %}
+                    <span class="stock-pill pill-low-stock">
+                        <span class="pulse-dot dot-warning"></span> Low Stock: Only {{ product.stock }} left!
+                    </span>
+                    {% else %}
+                    <span class="stock-pill pill-in-stock">
+                        <span class="pulse-dot dot-success"></span> In Stock
+                    </span>
+                    {% endif %}
+                {% else %}
+                <span class="stock-pill pill-out-of-stock">
+                    <span class="pulse-dot dot-danger"></span> Out of Stock
+                </span>
+                {% endif %}
+            </div>
+
+            <h1 class="product-title">{{ product.name }}</h1>
+
+            <!-- Brand / Author Info -->
+            {% if product.category.name == 'Books & Education' and product.author %}
+            <p class="product-brand-tag">
+                Author: <strong>{{ product.author }}</strong>
+            </p>
+            {% elif product.brand %}
+            <p class="product-brand-tag">
+                Brand: <strong>{{ product.brand }}</strong>
+            </p>
+            {% endif %}
+
+            <!-- Pricing Box -->
+            <div class="detail-price-box">
+                <div class="price-main-row">
+                    {% if product.discount_percentage > 0 %}
+                    <span class="price-currency">₹</span>
+                    <span class="price-amount">{{ product.discounted_price|floatformat:2 }}</span>
+                    <span class="price-mrp">M.R.P.: <del>₹{{ product.price|floatformat:2 }}</del></span>
+                    <span class="price-discount-badge">{{ product.discount_percentage|floatformat:0 }}% OFF</span>
+                    {% else %}
+                    <span class="price-currency">₹</span>
+                    <span class="price-amount">{{ product.price|floatformat:2 }}</span>
+                    {% endif %}
+                </div>
+                <p class="price-tax-note">Inclusive of all taxes &bull; Free delivery eligible</p>
+            </div>
+
+            <!-- Expected Delivery & Logistics Card -->
+            <div class="delivery-estimate-card">
+                <div class="delivery-estimate-top">
+                    <div class="delivery-truck-icon">
+                        <i class="fa-solid fa-truck-fast"></i>
+                    </div>
+                    <div class="delivery-text-wrap">
+                        {% if product.is_in_stock %}
+                        <div class="delivery-headline">
+                            <span class="delivery-prefix">Expected Delivery:</span>
+                            <span class="delivery-date-highlight" id="expectedDeliveryDateDisplay">
+                                {{ expected_delivery_date|date:"l, d F" }}
+                            </span>
+                        </div>
+                        <p class="delivery-range-note" id="deliveryRangeNote">
+                            {% if user_address %}
+                            Standard delivery to <strong>{{ delivery_location }}</strong> in {{ delivery_days }} business {% if delivery_days == 1 %}day{% else %}days{% endif %} ({{ delivery_start_date|date:"D, d M" }} – {{ delivery_end_date|date:"D, d M" }})
+                            {% else %}
+                            Standard delivery within {{ delivery_days }} business days ({{ delivery_start_date|date:"D, d M" }} – {{ delivery_end_date|date:"D, d M" }})
+                            {% endif %}
+                        </p>
+                        {% else %}
+                        <div class="delivery-headline">
+                            <span class="delivery-unavailable-text">Delivery Currently Unavailable</span>
+                        </div>
+                        <p class="delivery-range-note">This item is currently out of stock. Delivery estimates will resume once available.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if product.is_in_stock %}
+                <!-- Pincode Checker -->
+                <div class="pincode-checker-section">
+                    <div class="pincode-input-row">
+                        <div class="pincode-input-wrapper">
+                            <span class="pincode-geo-icon"><i class="fa-solid fa-location-dot"></i></span>
+                            <input
+                                type="text"
+                                id="deliveryPincodeInput"
+                                class="pincode-input"
+                                placeholder="Enter 6-digit Pincode"
+                                maxlength="6"
+                                value="{% if user_address %}{{ user_address.pincode }}{% endif %}"
+                                aria-label="Enter pincode for delivery estimate"
+                            >
+                            <button type="button" id="checkPincodeBtn" class="btn-check-pincode">
+                                Check
+                            </button>
+                        </div>
+                        <button type="button" id="useCurrentLocationBtn" class="btn-detect-location" title="Detect your current location">
+                            <span class="loc-detect-icon"><i class="fa-solid fa-location-crosshairs"></i></span> Use Current Location
+                        </button>
+                    </div>
+
+                    <div id="pincodeMessage" class="pincode-feedback-msg" {% if user_address %}style="display: flex;"{% else %}style="display: none;"{% endif %}>
+                        {% if user_address %}
+                        <div class="pincode-success">
+                            <span class="check-icon"><i class="fa-solid fa-check"></i></span>
+                            <div class="msg-text">Delivery available to <strong>{{ user_address.city }} ({{ user_address.pincode }})</strong> by <strong>{{ expected_delivery_date|date:"l, d M" }}</strong> ({{ delivery_days }} {% if delivery_days == 1 %}day{% else %}days{% endif %}).</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Delivery & Service Perks -->
+                <div class="delivery-features-grid">
+                    <div class="delivery-feature-item">
+                        <span class="feature-icon"><i class="fa-solid fa-truck-fast"></i></span>
+                        <div class="feature-info">
+                            <strong>Free Delivery</strong>
+                            <span>Orders above ₹499</span>
+                        </div>
+                    </div>
+                    <div class="delivery-feature-item">
+                        <span class="feature-icon"><i class="fa-solid fa-indian-rupee-sign"></i></span>
+                        <div class="feature-info">
+                            <strong>Pay on Delivery</strong>
+                            <span>Cash / UPI available</span>
+                        </div>
+                    </div>
+                    <div class="delivery-feature-item">
+                        <span class="feature-icon"><i class="fa-solid fa-rotate-left"></i></span>
+                        <div class="feature-info">
+                            <strong>7 Days Replacement</strong>
+                            <span>Hassle-free return policy</span>
+                        </div>
+                    </div>
+                    <div class="delivery-feature-item">
+                        <span class="feature-icon"><i class="fa-solid fa-shield-check"></i></span>
+                        <div class="feature-info">
+                            <strong>NexCart Assured</strong>
+                            <span>100% Genuine product</span>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Actions Row & Add To Cart Form -->
+            {% if product.is_in_stock %}
+            <form method="POST" action="{% url 'add_to_cart' product.id %}" class="detail-cart-form">
+                {% csrf_token %}
+
+                {% if product.category and 'fashion' in product.category.name|lower %}
+                <div class="product-size-section">
+                    <div class="size-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <label class="size-label-title" style="margin-bottom: 0;"><strong>Select Size</strong> <span class="required-asterisk" style="color: #ef4444;">*</span></label>
+                        <span id="selected-size-stock-feedback" class="size-stock-feedback" style="display: none; font-size: 13px; font-weight: 600;"></span>
+                    </div>
+                    <div class="size-options">
+                        <!-- Size S -->
+                        {% with s_stock=size_stock_map.S %}
+                        <label class="size-option {% if has_variants and s_stock == 0 %}size-out-of-stock{% endif %}">
+                            <input type="radio" name="size" value="S" required {% if has_variants and s_stock == 0 %}disabled{% endif %} data-stock="{% if has_variants %}{{ s_stock|default:0 }}{% else %}{{ product.stock }}{% endif %}">
+                            <span class="size-tile">
+                                <span class="size-letter">S</span>
+                                {% if has_variants %}
+                                    {% if s_stock == 0 %}
+                                    <small class="size-stock-badge out">Out</small>
+                                    {% elif s_stock <= 5 %}
+                                    <small class="size-stock-badge low">{{ s_stock }} left</small>
+                                    {% else %}
+                                    <small class="size-stock-badge in">{{ s_stock }}</small>
+                                    {% endif %}
+                                {% endif %}
+                            </span>
+                        </label>
+                        {% endwith %}
+
+                        <!-- Size M -->
+                        {% with m_stock=size_stock_map.M %}
+                        <label class="size-option {% if has_variants and m_stock == 0 %}size-out-of-stock{% endif %}">
+                            <input type="radio" name="size" value="M" {% if has_variants and m_stock == 0 %}disabled{% endif %} data-stock="{% if has_variants %}{{ m_stock|default:0 }}{% else %}{{ product.stock }}{% endif %}">
+                            <span class="size-tile">
+                                <span class="size-letter">M</span>
+                                {% if has_variants %}
+                                    {% if m_stock == 0 %}
+                                    <small class="size-stock-badge out">Out</small>
+                                    {% elif m_stock <= 5 %}
+                                    <small class="size-stock-badge low">{{ m_stock }} left</small>
+                                    {% else %}
+                                    <small class="size-stock-badge in">{{ m_stock }}</small>
+                                    {% endif %}
+                                {% endif %}
+                            </span>
+                        </label>
+                        {% endwith %}
+
+                        <!-- Size L -->
+                        {% with l_stock=size_stock_map.L %}
+                        <label class="size-option {% if has_variants and l_stock == 0 %}size-out-of-stock{% endif %}">
+                            <input type="radio" name="size" value="L" {% if has_variants and l_stock == 0 %}disabled{% endif %} data-stock="{% if has_variants %}{{ l_stock|default:0 }}{% else %}{{ product.stock }}{% endif %}">
+                            <span class="size-tile">
+                                <span class="size-letter">L</span>
+                                {% if has_variants %}
+                                    {% if l_stock == 0 %}
+                                    <small class="size-stock-badge out">Out</small>
+                                    {% elif l_stock <= 5 %}
+                                    <small class="size-stock-badge low">{{ l_stock }} left</small>
+                                    {% else %}
+                                    <small class="size-stock-badge in">{{ l_stock }}</small>
+                                    {% endif %}
+                                {% endif %}
+                            </span>
+                        </label>
+                        {% endwith %}
+
+                        <!-- Size XL -->
+                        {% with xl_stock=size_stock_map.XL %}
+                        <label class="size-option {% if has_variants and xl_stock == 0 %}size-out-of-stock{% endif %}">
+                            <input type="radio" name="size" value="XL" {% if has_variants and xl_stock == 0 %}disabled{% endif %} data-stock="{% if has_variants %}{{ xl_stock|default:0 }}{% else %}{{ product.stock }}{% endif %}">
+                            <span class="size-tile">
+                                <span class="size-letter">XL</span>
+                                {% if has_variants %}
+                                    {% if xl_stock == 0 %}
+                                    <small class="size-stock-badge out">Out</small>
+                                    {% elif xl_stock <= 5 %}
+                                    <small class="size-stock-badge low">{{ xl_stock }} left</small>
+                                    {% else %}
+                                    <small class="size-stock-badge in">{{ xl_stock }}</small>
+                                    {% endif %}
+                                {% endif %}
+                            </span>
+                        </label>
+                        {% endwith %}
+
+                        <!-- Size XXL -->
+                        {% with xxl_stock=size_stock_map.XXL %}
+                        <label class="size-option {% if has_variants and xxl_stock == 0 %}size-out-of-stock{% endif %}">
+                            <input type="radio" name="size" value="XXL" {% if has_variants and xxl_stock == 0 %}disabled{% endif %} data-stock="{% if has_variants %}{{ xxl_stock|default:0 }}{% else %}{{ product.stock }}{% endif %}">
+                            <span class="size-tile">
+                                <span class="size-letter">XXL</span>
+                                {% if has_variants %}
+                                    {% if xxl_stock == 0 %}
+                                    <small class="size-stock-badge out">Out</small>
+                                    {% elif xxl_stock <= 5 %}
+                                    <small class="size-stock-badge low">{{ xxl_stock }} left</small>
+                                    {% else %}
+                                    <small class="size-stock-badge in">{{ xxl_stock }}</small>
+                                    {% endif %}
+                                {% endif %}
+                            </span>
+                        </label>
+                        {% endwith %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="detail-actions">
+                    <button type="submit" class="btn-large btn-primary btn-add-cart">
+                        <span class="btn-icon"><i class="fa-solid fa-cart-plus"></i></span> Add to Cart
+                    </button>
+                    <a href="{% url 'product_list' %}" class="btn-large btn-secondary">
+                        Browse More
+                    </a>
+                </div>
+            </form>
+            {% else %}
+            <div class="detail-actions">
+                <button class="btn-large btn-disabled" disabled>
+                    Out of Stock
+                </button>
+                <a href="{% url 'product_list' %}" class="btn-large btn-secondary">
+                    Back to Products
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- Product Description & Highlights -->
+            <div class="product-description-card">
+                <div class="description-header">
+                    <span class="desc-icon"><i class="fa-solid fa-align-left"></i></span>
+                    <h3>About this item</h3>
+                </div>
+                <div class="description-body">
+                    <p>{{ product.description|linebreaksbr }}</p>
+                </div>
+            </div>
+
+            <!-- Specifications Table -->
+            <div class="product-specs-card">
+                <div class="description-header">
+                    <span class="desc-icon"><i class="fa-solid fa-list-check"></i></span>
+                    <h3>Product Specifications</h3>
+                </div>
+                <table class="specs-table">
+                    <tbody>
+                        <tr>
+                            <th>Category</th>
+                            <td>{{ product.category.name }}</td>
+                        </tr>
+                        {% if product.category.name == 'Books & Education' and product.author %}
+                        <tr>
+                            <th>Author</th>
+                            <td>{{ product.author }}</td>
+                        </tr>
+                        {% elif product.brand %}
+                        <tr>
+                            <th>Brand</th>
+                            <td>{{ product.brand }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if product.size %}
+                        <tr>
+                            <th>Size</th>
+                            <td>{{ product.size }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <th>Availability</th>
+                            <td>{% if product.is_in_stock %}In Stock ({{ product.stock }} units){% else %}Out of Stock{% endif %}</td>
+                        </tr>
+                        <tr>
+                            <th>Return Policy</th>
+                            <td>7 Days Replacement / Return</td>
+                        </tr>
+                        <tr>
+                            <th>Warranty / Quality</th>
+                            <td>100% Original & NexCart Verified</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Lightbox Modal (enhanced) -->
+
+<div id="imageLightbox" class="image-lightbox" style="display:none;">
+    <div class="image-lightbox-overlay" id="lightboxOverlay"></div>
+    <div class="image-lightbox-content">
+        <button id="lightboxClose" class="lightbox-close" aria-label="Close">✕</button>
+        <button id="lightboxPrev" class="lightbox-nav lightbox-prev" aria-label="Previous">‹</button>
+        <img id="lightboxImage" src="" alt="Full image">
+        <button id="lightboxNext" class="lightbox-nav lightbox-next" aria-label="Next">›</button>
+    </div>
+</div>
+
+<div id="gallery-data" data-images='{{ gallery_images_json }}'></div>
+
+<script>
+const galleryDataElement = document.getElementById('gallery-data');
+const galleryImages = (() => {
+    if (!galleryDataElement) return [];
+    try {
+        const parsed = JSON.parse(galleryDataElement.dataset.images || '[]');
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        return [];
+    }
+})();
+
+let currentImageIndex = 0;
+
+function updateActiveThumbnail(index) {
+    const thumbnails = document.querySelectorAll('.thumbnail-button');
+    thumbnails.forEach(function (btn, i) {
+        btn.classList.toggle('active', i === index);
+    });
+}
+
+function changeMainImage(imageUrl, thumbnail, index) {
+    const mainImage = document.getElementById('mainProductImage');
+    if (!mainImage || !imageUrl) return;
+
+    mainImage.src = imageUrl;
+
+    if (typeof index !== 'undefined') {
+        currentImageIndex = Number(index);
+    } else {
+        const matchIndex = galleryImages.indexOf(imageUrl);
+        if (matchIndex !== -1) currentImageIndex = matchIndex;
+    }
+
+    updateActiveThumbnail(currentImageIndex);
+
+    if (thumbnail) {
+        const container = document.getElementById('productThumbnails');
+        if (container) {
+            const rect = thumbnail.getBoundingClientRect();
+            const parentRect = container.getBoundingClientRect();
+            const offset = (rect.left + rect.right) / 2 - (parentRect.left + parentRect.right) / 2;
+            container.scrollBy({ left: offset, behavior: 'smooth' });
+        }
+    }
+}
+
+function scrollThumbnails(direction) {
+    const container = document.getElementById('productThumbnails');
+    if (!container) return;
+
+    const scrollAmount = Math.max(120, Math.floor(container.clientWidth * 0.6));
+    const maxScrollLeft = container.scrollWidth - container.clientWidth;
+    let newScroll = container.scrollLeft + scrollAmount * direction;
+    newScroll = Math.max(0, Math.min(newScroll, maxScrollLeft));
+    container.scrollTo({ left: newScroll, behavior: 'smooth' });
+}
+
+function openLightbox(src, index) {
+    const lightbox = document.getElementById('imageLightbox');
+    const lightboxImage = document.getElementById('lightboxImage');
+    if (!lightbox || !lightboxImage) return;
+
+    if (typeof index !== 'undefined') currentImageIndex = Number(index);
+    lightboxImage.src = src || galleryImages[currentImageIndex] || '';
+    lightbox.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+    const lightbox = document.getElementById('imageLightbox');
+    const lightboxImage = document.getElementById('lightboxImage');
+    if (!lightbox || !lightboxImage) return;
+
+    lightbox.style.display = 'none';
+    lightboxImage.src = '';
+    document.body.style.overflow = '';
+}
+
+function showNextImage() {
+    if (!galleryImages.length) return;
+    currentImageIndex = (currentImageIndex + 1) % galleryImages.length;
+    const src = galleryImages[currentImageIndex];
+    const lightboxImage = document.getElementById('lightboxImage');
+    const mainImage = document.getElementById('mainProductImage');
+
+    if (lightboxImage) lightboxImage.src = src;
+    if (mainImage) mainImage.src = src;
+    updateActiveThumbnail(currentImageIndex);
+}
+
+function showPrevImage() {
+    if (!galleryImages.length) return;
+    currentImageIndex = (currentImageIndex - 1 + galleryImages.length) % galleryImages.length;
+    const src = galleryImages[currentImageIndex];
+    const lightboxImage = document.getElementById('lightboxImage');
+    const mainImage = document.getElementById('mainProductImage');
+
+    if (lightboxImage) lightboxImage.src = src;
+    if (mainImage) mainImage.src = src;
+    updateActiveThumbnail(currentImageIndex);
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const mainImage = document.getElementById('mainProductImage');
+    if (mainImage) {
+        mainImage.style.cursor = 'zoom-in';
+        mainImage.addEventListener('click', function () {
+            openLightbox(this.src, currentImageIndex);
+        });
+    }
+
+    const lightboxOverlay = document.getElementById('lightboxOverlay');
+    const lightboxClose = document.getElementById('lightboxClose');
+    if (lightboxOverlay) lightboxOverlay.addEventListener('click', closeLightbox);
+    if (lightboxClose) lightboxClose.addEventListener('click', closeLightbox);
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeLightbox();
+        if (e.key === 'ArrowRight') showNextImage();
+        if (e.key === 'ArrowLeft') showPrevImage();
+    });
+
+    const thumbnails = document.querySelectorAll('.thumbnail-button');
+    thumbnails.forEach(function (btn, idx) {
+        btn.setAttribute('tabindex', '0');
+        btn.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                btn.click();
+            }
+        });
+
+        btn.addEventListener('click', function (e) {
+            currentImageIndex = idx;
+            const imageUrl = btn.dataset.image || galleryImages[idx];
+            changeMainImage(imageUrl, btn, idx);
+            if (e.altKey || e.metaKey) {
+                openLightbox(imageUrl, idx);
+            }
+        });
+    });
+
+    const lightboxPrev = document.getElementById('lightboxPrev');
+    const lightboxNext = document.getElementById('lightboxNext');
+    if (lightboxPrev) lightboxPrev.addEventListener('click', showPrevImage);
+    if (lightboxNext) lightboxNext.addEventListener('click', showNextImage);
+
+    // Pincode Delivery Estimator
+    const pincodeInput = document.getElementById('deliveryPincodeInput');
+    const checkPincodeBtn = document.getElementById('checkPincodeBtn');
+    const pincodeMessage = document.getElementById('pincodeMessage');
+    const expectedDisplay = document.getElementById('expectedDeliveryDateDisplay');
+    const deliveryRangeNote = document.getElementById('deliveryRangeNote');
+
+    async function checkDeliveryPincode() {
+        if (!pincodeInput || !pincodeMessage) return;
+
+        const pinValue = pincodeInput.value.trim();
+        const pinRegex = /^[1-9][0-9]{5}$/;
+
+        if (!pinValue) {
+            pincodeMessage.style.display = 'flex';
+            pincodeMessage.innerHTML = '<span class="pincode-error">⚠️ Please enter a 6-digit postal pincode.</span>';
+            pincodeInput.focus();
+            return;
+        }
+
+        if (!pinRegex.test(pinValue)) {
+            pincodeMessage.style.display = 'flex';
+            pincodeMessage.innerHTML = '<span class="pincode-error">⚠️ Please enter a valid 6-digit postal pincode.</span>';
+            pincodeInput.focus();
+            return;
+        }
+
+        if (checkPincodeBtn) {
+            checkPincodeBtn.disabled = true;
+            checkPincodeBtn.textContent = 'Checking...';
+        }
+
+        try {
+            const response = await fetch(`{% url 'check_pincode_delivery' %}?pincode=${encodeURIComponent(pinValue)}`);
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                if (expectedDisplay) {
+                    expectedDisplay.textContent = data.expected_delivery_date;
+                }
+                if (deliveryRangeNote) {
+                    const dayLabel = data.delivery_days === 1 ? '1 business day' : `${data.delivery_days} business days`;
+                    deliveryRangeNote.innerHTML = `Standard delivery to <strong>${data.location}</strong> in ${dayLabel} (${data.delivery_window})`;
+                }
+
+                pincodeMessage.style.display = 'flex';
+                pincodeMessage.innerHTML = `<div class="pincode-success"><span class="check-icon">✓</span><div class="msg-text">${data.message}</div></div>`;
+            } else {
+                pincodeMessage.style.display = 'flex';
+                pincodeMessage.innerHTML = `<div class="pincode-error"><span class="check-icon">⚠️</span><div class="msg-text">${data.message || 'Unable to check delivery for this pincode.'}</div></div>`;
+            }
+        } catch (error) {
+            // Client-side fallback calculation based on prefix proximity
+            const circleMap = {
+                11: ['Delhi NCR', 3],
+                12: ['Haryana', 3], 13: ['Haryana', 3],
+                14: ['Punjab', 4], 15: ['Punjab', 4], 16: ['Chandigarh / Punjab', 4],
+                17: ['Himachal Pradesh', 5],
+                18: ['Jammu & Kashmir', 5], 19: ['Jammu & Kashmir', 6],
+                20: ['Uttar Pradesh West', 4], 21: ['Uttar Pradesh Central', 4],
+                22: ['Uttar Pradesh East', 4], 23: ['Uttar Pradesh', 4],
+                24: ['Uttarakhand', 4], 25: ['Uttar Pradesh', 4],
+                26: ['Uttarakhand', 5], 27: ['Uttar Pradesh', 4], 28: ['Uttar Pradesh', 4],
+                30: ['Jaipur / Rajasthan', 3], 31: ['Rajasthan', 3], 32: ['Rajasthan', 3],
+                33: ['Rajasthan', 4], 34: ['Jodhpur / Rajasthan', 3],
+                36: ['Saurashtra / Gujarat', 2], 37: ['Kutch / Gujarat', 2],
+                38: ['Ahmedabad / Gujarat', 2], 39: ['Surat / Gujarat', 2],
+                40: ['Mumbai / MMR', 1], 41: ['Pune / Maharashtra', 2],
+                42: ['Nashik / Maharashtra', 2], 43: ['Aurangabad / Maharashtra', 2],
+                44: ['Nagpur / Maharashtra', 3],
+                45: ['Indore / MP', 3], 46: ['Bhopal / MP', 3],
+                47: ['Gwalior / MP', 3], 48: ['Jabalpur / MP', 4], 49: ['Chhattisgarh', 4],
+                50: ['Hyderabad / Telangana', 3], 51: ['Rayalaseema / AP', 3],
+                52: ['Vijayawada / AP', 3], 53: ['Visakhapatnam / AP', 4],
+                56: ['Bengaluru / Karnataka', 3], 57: ['Mangalore / Karnataka', 3],
+                58: ['Hubli / Karnataka', 3], 59: ['Belgaum / Karnataka', 3],
+                60: ['Chennai / Tamil Nadu', 3], 61: ['Tamil Nadu Central', 4],
+                62: ['Madurai / Tamil Nadu', 4], 63: ['Coimbatore / Tamil Nadu', 3],
+                64: ['Coimbatore / Tamil Nadu', 4],
+                67: ['Calicut / North Kerala', 4], 68: ['Kochi / Central Kerala', 4], 69: ['Trivandrum / South Kerala', 4],
+                70: ['Kolkata / West Bengal', 4], 71: ['West Bengal Central', 4],
+                72: ['West Bengal South', 5], 73: ['North Bengal / Sikkim', 5], 74: ['West Bengal', 5],
+                75: ['Bhubaneswar / Odisha', 4], 76: ['Odisha South', 5], 77: ['Odisha West', 5],
+                78: ['Guwahati / Assam', 6], 79: ['North-East Region', 7],
+                80: ['Patna / Bihar', 4], 81: ['Bihar South', 5], 82: ['Gaya / Bihar', 5],
+                83: ['Ranchi / Jharkhand', 4], 84: ['Muzaffarpur / Bihar', 5], 85: ['Bhagalpur / Bihar', 5],
+            };
+
+            const prefix2 = parseInt(pinValue.slice(0, 2), 10);
+            const prefix1 = parseInt(pinValue.slice(0, 1), 10);
+            let location = 'Your Postal Region';
+            let transitDays = 4;
+
+            if (circleMap[prefix2]) {
+                [location, transitDays] = circleMap[prefix2];
+            } else {
+                const zoneDiff = Math.abs(prefix1 - 4);
+                transitDays = zoneDiff === 0 ? 2 : zoneDiff === 1 ? 3 : zoneDiff === 2 ? 4 : 5 + (zoneDiff - 3);
+            }
+
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const fullMonths = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+            const now = new Date();
+            const startDelivery = new Date(now.getTime() + Math.max(1, transitDays - 1) * 24 * 60 * 60 * 1000);
+            const expectedDelivery = new Date(now.getTime() + transitDays * 24 * 60 * 60 * 1000);
+            const endDelivery = new Date(now.getTime() + (transitDays + 1) * 24 * 60 * 60 * 1000);
+
+            const expDayName = days[expectedDelivery.getDay()];
+            const expMonthName = fullMonths[expectedDelivery.getMonth()];
+            const expDateNum = expectedDelivery.getDate();
+            const formattedExpected = `${expDayName}, ${expDateNum} ${expMonthName}`;
+
+            const startShort = `${days[startDelivery.getDay()].slice(0,3)}, ${startDelivery.getDate()} ${months[startDelivery.getMonth()]}`;
+            const endShort = `${days[endDelivery.getDay()].slice(0,3)}, ${endDelivery.getDate()} ${months[endDelivery.getMonth()]}`;
+
+            if (expectedDisplay) {
+                expectedDisplay.textContent = formattedExpected;
+            }
+            if (deliveryRangeNote) {
+                const dayWord = transitDays === 1 ? '1 business day' : `${transitDays} business days`;
+                deliveryRangeNote.innerHTML = `Standard delivery to <strong>${location}</strong> in ${dayWord} (${startShort} – ${endShort})`;
+            }
+
+            pincodeMessage.style.display = 'flex';
+            pincodeMessage.innerHTML = `<div class="pincode-success"><span class="check-icon">✓</span><div class="msg-text">Delivery available for PIN <strong>${pinValue}</strong> to <strong>${location}</strong> by <strong>${expDayName}, ${expDateNum} ${months[expectedDelivery.getMonth()]}</strong> (${transitDays} days).</div></div>`;
+        } finally {
+            if (checkPincodeBtn) {
+                checkPincodeBtn.disabled = false;
+                checkPincodeBtn.textContent = 'Check';
+            }
+        }
+    }
+
+    if (checkPincodeBtn) {
+        checkPincodeBtn.addEventListener('click', checkDeliveryPincode);
+    }
+
+    if (pincodeInput) {
+        pincodeInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                checkDeliveryPincode();
+            }
+        });
+    }
+
+    // Geolocation / Current Location Auto-Detector
+    const useLocationBtn = document.getElementById('useCurrentLocationBtn');
+
+    async function detectCurrentLocationDelivery() {
+        if (!navigator.geolocation) {
+            if (pincodeMessage) {
+                pincodeMessage.style.display = 'flex';
+                pincodeMessage.innerHTML = '<div class="pincode-error"><span class="check-icon">⚠️</span><div class="msg-text">Geolocation is not supported by your browser. Please enter your 6-digit pincode manually.</div></div>';
+            }
+            return;
+        }
+
+        if (useLocationBtn) {
+            useLocationBtn.disabled = true;
+            useLocationBtn.innerHTML = '<span class="loc-detect-spinner">⏳</span> Detecting...';
+        }
+
+        if (pincodeMessage) {
+            pincodeMessage.style.display = 'flex';
+            pincodeMessage.innerHTML = '<div class="pincode-info"><span class="check-icon">📡</span><div class="msg-text">Detecting your current location...</div></div>';
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            async function (position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                try {
+                    let detectedPin = '';
+                    let locationName = '';
+
+                    try {
+                        const geoResp = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`, { signal: AbortSignal.timeout(3500) });
+                        if (geoResp.ok) {
+                            const geoData = await geoResp.json();
+                            if (geoData.postcode && /^\d{6}$/.test(geoData.postcode.trim())) {
+                                detectedPin = geoData.postcode.trim();
+                            }
+                            if (geoData.city || geoData.locality || geoData.principalSubdivision) {
+                                locationName = [geoData.city || geoData.locality, geoData.principalSubdivision].filter(Boolean).join(', ');
+                            }
+                        }
+                    } catch (geoErr) {
+                        // Reverse geocoding network timeout fallback to backend coordinates
+                    }
+
+                    let apiUrl = `{% url 'check_pincode_delivery' %}?`;
+                    if (detectedPin) {
+                        apiUrl += `pincode=${encodeURIComponent(detectedPin)}`;
+                    } else {
+                        apiUrl += `lat=${lat}&lng=${lng}`;
+                    }
+
+                    const response = await fetch(apiUrl);
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        if (pincodeInput) {
+                            pincodeInput.value = data.pincode;
+                        }
+                        if (expectedDisplay) {
+                            expectedDisplay.textContent = data.expected_delivery_date;
+                        }
+                        if (deliveryRangeNote) {
+                            const dayLabel = data.delivery_days === 1 ? '1 business day' : `${data.delivery_days} business days`;
+                            deliveryRangeNote.innerHTML = `Standard delivery to <strong>${data.location}</strong> in ${dayLabel} (${data.delivery_window})`;
+                        }
+
+                        if (pincodeMessage) {
+                            pincodeMessage.style.display = 'flex';
+                            const locLabel = locationName || data.location;
+                            pincodeMessage.innerHTML = `<div class="pincode-success"><span class="check-icon">📍</span><div class="msg-text">Current location detected: <strong>${locLabel} (PIN ${data.pincode})</strong> &mdash; Delivery by <strong>${data.expected_delivery_date}</strong> (${data.delivery_days} business days).</div></div>`;
+                        }
+                    } else {
+                        if (pincodeMessage) {
+                            pincodeMessage.style.display = 'flex';
+                            pincodeMessage.innerHTML = `<div class="pincode-error"><span class="check-icon">⚠️</span><div class="msg-text">${data.message || 'Could not calculate delivery for your location.'}</div></div>`;
+                        }
+                    }
+                } catch (fetchErr) {
+                    if (pincodeMessage) {
+                        pincodeMessage.style.display = 'flex';
+                        pincodeMessage.innerHTML = '<div class="pincode-error"><span class="check-icon">⚠️</span><div class="msg-text">Could not detect delivery timeline. Please enter your 6-digit pincode manually.</div></div>';
+                    }
+                } finally {
+                    if (useLocationBtn) {
+                        useLocationBtn.disabled = false;
+                        useLocationBtn.innerHTML = '<span class="loc-detect-icon">🎯</span> Use Current Location';
+                    }
+                }
+            },
+            function (geoError) {
+                if (useLocationBtn) {
+                    useLocationBtn.disabled = false;
+                    useLocationBtn.innerHTML = '<span class="loc-detect-icon">🎯</span> Use Current Location';
+                }
+                let errorMsg = 'Location access was denied or unavailable. Please enter your 6-digit pincode manually.';
+                if (geoError.code === geoError.TIMEOUT) {
+                    errorMsg = 'Location detection timed out. Please enter your pincode manually.';
+                }
+                if (pincodeMessage) {
+                    pincodeMessage.style.display = 'flex';
+                    pincodeMessage.innerHTML = `<div class="pincode-error"><span class="check-icon">⚠️</span><div class="msg-text">${errorMsg}</div></div>`;
+                }
+            },
+            {
+                enableHighAccuracy: false,
+                timeout: 7000,
+                maximumAge: 60000
+            }
+        );
+    }
+
+    if (useLocationBtn) {
+        useLocationBtn.addEventListener('click', detectCurrentLocationDelivery);
+    }
+
+    // Size Selection Real-Time Stock Feedback
+    const sizeRadios = document.querySelectorAll('.size-option input[type="radio"]');
+    const sizeFeedback = document.getElementById('selected-size-stock-feedback');
+    const addToCartBtn = document.querySelector('.btn-add-cart');
+
+    sizeRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (!sizeFeedback) return;
+            const stock = parseInt(this.dataset.stock || '0', 10);
+            sizeFeedback.style.display = 'inline-block';
+
+            if (stock === 0) {
+                sizeFeedback.innerHTML = `<span style="color: #ef4444;"><i class="fa-solid fa-circle-xmark"></i> Size ${this.value} is Out of Stock</span>`;
+                if (addToCartBtn) {
+                    addToCartBtn.disabled = true;
+                    addToCartBtn.style.opacity = '0.5';
+                    addToCartBtn.style.cursor = 'not-allowed';
+                }
+            } else if (stock <= 5) {
+                sizeFeedback.innerHTML = `<span style="color: #d97706;"><i class="fa-solid fa-triangle-exclamation"></i> Only ${stock} left in Size ${this.value}!</span>`;
+                if (addToCartBtn) {
+                    addToCartBtn.disabled = false;
+                    addToCartBtn.style.opacity = '1';
+                    addToCartBtn.style.cursor = 'pointer';
+                }
+            } else {
+                sizeFeedback.innerHTML = `<span style="color: #059669;"><i class="fa-solid fa-circle-check"></i> Size ${this.value}: ${stock} in stock</span>`;
+                if (addToCartBtn) {
+                    addToCartBtn.disabled = false;
+                    addToCartBtn.style.opacity = '1';
+                    addToCartBtn.style.cursor = 'pointer';
+                }
+            }
+        });
+    });
+});
+</script>
+
+{% endblock %}

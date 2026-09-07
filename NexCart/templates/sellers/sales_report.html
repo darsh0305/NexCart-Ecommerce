@@ -1,0 +1,555 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+Sales Reports - NexCart Seller
+{% endblock %}
+
+{% block extra_head %}
+<!-- Chart.js for interactive analytics -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="seller-container">
+
+    <!-- HEADER -->
+    <div class="seller-header">
+        <div>
+            <div class="breadcrumbs">
+                <a href="{% url 'home' %}">Home</a> &rsaquo;
+                <a href="{% url 'seller_dashboard' %}">Seller Dashboard</a> &rsaquo;
+                <span>Sales Reports</span>
+            </div>
+            <h1>Sales Reports &amp; Analytics</h1>
+            <p>Analyze your NexCart commercial performance, daily transaction volume, and order revenues.</p>
+        </div>
+        <div class="seller-actions">
+            <a href="{% url 'seller_dashboard' %}" class="btn-secondary">
+                <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+            </a>
+            <a href="{% url 'seller_orders' %}" class="btn-primary">
+                <i class="fa-solid fa-truck-ramp-box"></i> Manage Orders
+            </a>
+        </div>
+    </div>
+
+    <!-- SUMMARY STAT CARDS -->
+    <div class="seller-stats">
+        <div class="stat-card">
+            <div class="stat-icon icon-revenue">
+                <i class="fa-solid fa-indian-rupee-sign"></i>
+            </div>
+            <div class="stat-info">
+                <h3>₹{{ total_revenue|floatformat:2 }}</h3>
+                <p>Total Sales Revenue</p>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon icon-orders">
+                <i class="fa-solid fa-bag-shopping"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_orders }}</h3>
+                <p>Total Orders Placed</p>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon icon-products">
+                <i class="fa-solid fa-boxes-stacked"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_products_sold }}</h3>
+                <p>Total Units Sold</p>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon icon-aov">
+                <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <div class="stat-info">
+                <h3>₹{{ average_order_value|floatformat:2 }}</h3>
+                <p>Average Order Value</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- INVENTORY HEALTH CARD -->
+    <div class="inventory-health-card">
+        <h3><i class="fa-solid fa-heart-pulse"></i> Inventory &amp; Catalog Health</h3>
+        <div class="health-indicators">
+            <div class="health-pill safe">
+                <span class="dot"></span>
+                <span>Active Listings: <strong>{{ total_products }}</strong></span>
+            </div>
+            <div class="health-pill warning">
+                <span class="dot"></span>
+                <span>Low Stock (&le; 5 units): <strong>{{ low_stock_products }}</strong></span>
+            </div>
+            <div class="health-pill danger">
+                <span class="dot"></span>
+                <span>Out of Stock (0 units): <strong>{{ out_of_stock_products }}</strong></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================
+         INTERACTIVE VISUAL CHARTS & GRAPHS SECTION
+         ========================================================= -->
+    <div class="charts-section-grid">
+        
+        <!-- MAIN REVENUE & SALES TREND CHART -->
+        <div class="seller-card chart-card main-chart-card">
+            <div class="section-header-row chart-header-row">
+                <div>
+                    <h2><i class="fa-solid fa-chart-line"></i> Revenue &amp; Sales Trends</h2>
+                    <p class="card-subtitle">Performance trajectory across the last 30 calendar days</p>
+                </div>
+                <div class="chart-toggles">
+                    <button type="button" class="btn-chart-toggle active" id="btnToggleRevenue" onclick="switchChartMode('revenue')">
+                        <i class="fa-solid fa-indian-rupee-sign"></i> Revenue
+                    </button>
+                    <button type="button" class="btn-chart-toggle" id="btnToggleUnits" onclick="switchChartMode('units')">
+                        <i class="fa-solid fa-boxes-stacked"></i> Units Sold
+                    </button>
+                </div>
+            </div>
+
+            <div class="chart-canvas-container">
+                <canvas id="salesTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- TOP PRODUCTS & STATUS BREAKDOWN -->
+        <div class="charts-sub-grid">
+            
+            <!-- TOP SELLING PRODUCTS -->
+            <div class="seller-card chart-card">
+                <div class="section-header-row">
+                    <div>
+                        <h2><i class="fa-solid fa-trophy"></i> Top Catalog Revenue</h2>
+                        <p class="card-subtitle">Highest grossing items</p>
+                    </div>
+                </div>
+                <div class="chart-canvas-container small-chart">
+                    <canvas id="topProductsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- ORDER STATUS BREAKDOWN -->
+            <div class="seller-card chart-card">
+                <div class="section-header-row">
+                    <div>
+                        <h2><i class="fa-solid fa-chart-pie"></i> Fulfillment Status</h2>
+                        <p class="card-subtitle">Orders by current delivery state</p>
+                    </div>
+                </div>
+                <div class="chart-canvas-container small-chart">
+                    <canvas id="orderStatusChart"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- 2 COLUMNS: DAILY SALES BREAKDOWN TABLE & RECENT ORDERS -->
+    <div class="reports-columns-grid">
+        
+        <!-- DAILY SALES BREAKDOWN -->
+        <div class="seller-card">
+            <div class="section-header-row">
+                <div>
+                    <h2>Daily Sales Breakdown</h2>
+                    <p class="card-subtitle">Volume and revenue by calendar day (Last 30 Days)</p>
+                </div>
+            </div>
+
+            {% if daily_sales %}
+            <div class="table-responsive">
+                <table class="seller-table sales-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th style="text-align: center;">Products</th>
+                            <th style="text-align: right;">Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for day in daily_sales %}
+                        <tr>
+                            <td>
+                                <strong>{{ day.sale_date|date:"d M Y" }}</strong>
+                            </td>
+                            <td style="text-align: center;">
+                                <span class="badge-products-count">{{ day.products }}</span>
+                            </td>
+                            <td style="text-align: right;" class="text-revenue">
+                                ₹{{ day.revenue|floatformat:2 }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="sales-empty">
+                <p>No sales recorded in the past 30 days. When orders are placed, daily breakdowns will appear here.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- RECENT ORDERS -->
+        <div class="seller-card">
+            <div class="section-header-row">
+                <div>
+                    <h2>Recent Orders</h2>
+                    <p class="card-subtitle">Latest customer purchases containing your catalog items</p>
+                </div>
+                <a href="{% url 'seller_orders' %}" class="view-all-link">View All &rarr;</a>
+            </div>
+
+            {% if recent_orders_data %}
+            <div class="table-responsive">
+                <table class="seller-table sales-table">
+                    <thead>
+                        <tr>
+                            <th>Order</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th style="text-align: right;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in recent_orders_data %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'seller_orders' %}" class="order-id-link">
+                                    #{{ item.order.order_number }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="order-date-text">{{ item.order.created_at|date:"d M Y" }}</span>
+                            </td>
+                            <td>
+                                <span class="order-status {{ item.order.status }}">
+                                    {{ item.order.get_status_display }}
+                                </span>
+                            </td>
+                            <td style="text-align: right;" class="text-revenue">
+                                ₹{{ item.seller_subtotal|floatformat:2 }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="sales-empty">
+                <p>No active orders found yet. New orders will automatically display here.</p>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- RECENT SOLD ITEMS LEDGER -->
+    {% if recent_sold_items %}
+    <div class="seller-card" style="margin-top: 28px;">
+        <div class="section-header-row">
+            <div>
+                <h2>Recent Sold Items Ledger</h2>
+                <p class="card-subtitle">Individual line-item sales from your catalog</p>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="seller-table">
+                <thead>
+                    <tr>
+                        <th>Order #</th>
+                        <th>Product</th>
+                        <th>Date</th>
+                        <th style="text-align: center;">Quantity</th>
+                        <th style="text-align: right;">Unit Price</th>
+                        <th style="text-align: right;">Total Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in recent_sold_items %}
+                    <tr>
+                        <td>
+                            <strong>{{ item.order.order_number }}</strong>
+                        </td>
+                        <td>
+                            <span class="sold-product-name">{{ item.product_name }}</span>
+                        </td>
+                        <td>{{ item.order.created_at|date:"d M Y, h:i A" }}</td>
+                        <td style="text-align: center;">{{ item.quantity }}</td>
+                        <td style="text-align: right;">₹{{ item.price|floatformat:2 }}</td>
+                        <td style="text-align: right;" class="text-revenue">
+                            <strong>₹{{ item.total_price|floatformat:2 }}</strong>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Parse serialized server data
+    const chartLabels = {{ chart_labels_json|safe|default:"[]" }};
+    const chartRevenues = {{ chart_revenue_json|safe|default:"[]" }};
+    const chartUnits = {{ chart_units_json|safe|default:"[]" }};
+
+    const topProductLabels = {{ top_product_labels_json|safe|default:"[]" }};
+    const topProductRevenues = {{ top_product_revenue_json|safe|default:"[]" }};
+
+    const statusLabels = {{ status_labels_json|safe|default:"[]" }};
+    const statusData = {{ status_data_json|safe|default:"[]" }};
+
+    // Default fallback labels if empty
+    const displayLabels = chartLabels.length > 0 ? chartLabels : ['Today'];
+    const displayRevenues = chartRevenues.length > 0 ? chartRevenues : [{{ total_revenue|default:0 }}];
+    const displayUnits = chartUnits.length > 0 ? chartUnits : [{{ total_products_sold|default:0 }}];
+
+    // 1. Main Sales Trend Chart
+    const trendCtx = document.getElementById('salesTrendChart');
+    let trendChart = null;
+
+    if (trendCtx) {
+        const ctx = trendCtx.getContext('2d');
+        
+        // Gradient for Revenue
+        const revGradient = ctx.createLinearGradient(0, 0, 0, 300);
+        revGradient.addColorStop(0, 'rgba(37, 99, 235, 0.35)');
+        revGradient.addColorStop(1, 'rgba(37, 99, 235, 0.00)');
+
+        trendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: displayLabels,
+                datasets: [{
+                    label: 'Revenue (₹)',
+                    data: displayRevenues,
+                    borderColor: '#2563EB',
+                    backgroundColor: revGradient,
+                    fill: true,
+                    tension: 0.35,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#2563EB',
+                    pointBorderColor: '#FFFFFF',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 7,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: '#0F172A',
+                        titleFont: { family: 'Inter', size: 13, weight: '700' },
+                        bodyFont: { family: 'Inter', size: 14, weight: '600' },
+                        padding: 12,
+                        cornerRadius: 10,
+                        callbacks: {
+                            label: function(context) {
+                                return ' ₹' + context.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { family: 'Inter', size: 12, weight: '600' }, color: '#64748B' }
+                    },
+                    y: {
+                        border: { dash: [5, 5] },
+                        grid: { color: '#E2E8F0' },
+                        ticks: {
+                            font: { family: 'Inter', size: 12 },
+                            color: '#64748B',
+                            callback: function(value) {
+                                return '₹' + value.toLocaleString('en-IN');
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Toggle between Revenue and Units Sold
+    window.switchChartMode = function(mode) {
+        if (!trendChart) return;
+        const btnRev = document.getElementById('btnToggleRevenue');
+        const btnUnits = document.getElementById('btnToggleUnits');
+
+        if (mode === 'revenue') {
+            btnRev.classList.add('active');
+            btnUnits.classList.remove('active');
+
+            trendChart.data.datasets[0].label = 'Revenue (₹)';
+            trendChart.data.datasets[0].data = displayRevenues;
+            trendChart.data.datasets[0].borderColor = '#2563EB';
+            trendChart.options.scales.y.ticks.callback = function(value) {
+                return '₹' + value.toLocaleString('en-IN');
+            };
+            trendChart.options.plugins.tooltip.callbacks.label = function(context) {
+                return ' ₹' + context.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+            };
+        } else {
+            btnUnits.classList.add('active');
+            btnRev.classList.remove('active');
+
+            trendChart.data.datasets[0].label = 'Units Sold';
+            trendChart.data.datasets[0].data = displayUnits;
+            trendChart.data.datasets[0].borderColor = '#10B981';
+            trendChart.options.scales.y.ticks.callback = function(value) {
+                return value + ' pcs';
+            };
+            trendChart.options.plugins.tooltip.callbacks.label = function(context) {
+                return ' ' + context.parsed.y + ' units sold';
+            };
+        }
+        trendChart.update();
+    };
+
+    // 2. Top Products Bar Chart
+    const topCtx = document.getElementById('topProductsChart');
+    if (topCtx && topProductLabels.length > 0) {
+        new Chart(topCtx, {
+            type: 'bar',
+            data: {
+                labels: topProductLabels,
+                datasets: [{
+                    label: 'Gross Revenue (₹)',
+                    data: topProductRevenues,
+                    backgroundColor: [
+                        '#3B82F6',
+                        '#10B981',
+                        '#F59E0B',
+                        '#8B5CF6',
+                        '#EC4899',
+                        '#06B6D4'
+                    ],
+                    borderRadius: 6,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ' ₹' + context.parsed.x.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: '#E2E8F0' },
+                        ticks: {
+                            callback: function(v) { return '₹' + v; }
+                        }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { font: { size: 11, weight: '600' } }
+                    }
+                }
+            }
+        });
+    } else if (topCtx) {
+        // Placeholder if no product data yet
+        new Chart(topCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Store Active'],
+                datasets: [{
+                    label: 'Revenue',
+                    data: [{{ total_revenue|default:0 }}],
+                    backgroundColor: ['#3B82F6'],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // 3. Order Status Doughnut Chart
+    const statusCtx = document.getElementById('orderStatusChart');
+    if (statusCtx) {
+        const sLabels = statusLabels.length > 0 ? statusLabels : ['Active Orders'];
+        const sData = statusData.length > 0 ? statusData : [{{ total_orders|default:1 }}];
+
+        new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: sLabels,
+                datasets: [{
+                    data: sData,
+                    backgroundColor: [
+                        '#10B981', // Delivered
+                        '#3B82F6', // Shipped
+                        '#F59E0B', // Confirmed / Processing
+                        '#64748B'  // Pending
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#FFFFFF',
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: { family: 'Inter', size: 12, weight: '600' },
+                            padding: 14,
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ' ' + context.label + ': ' + context.parsed + ' orders';
+                            }
+                        }
+                    }
+                },
+                cutout: '68%'
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

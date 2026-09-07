@@ -1,0 +1,264 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+Checkout - NexCart
+{% endblock %}
+
+{% block content %}
+
+<div class="checkout-page container">
+
+    <div class="checkout-header-bar">
+        <div class="breadcrumbs">
+            <a href="{% url 'home' %}">Home</a> &rsaquo;
+            <a href="{% url 'cart_detail' %}">Cart</a> &rsaquo;
+            <span>Checkout</span>
+        </div>
+        <h1>Secure Checkout</h1>
+        <p>Review your shipping address, choose your payment method, and complete your order.</p>
+    </div>
+
+    <div class="checkout-container">
+
+        <!-- =========================================
+             LEFT SIDE: ADDRESS & PAYMENT
+        ========================================== -->
+        <div class="checkout-left">
+
+            <!-- =====================================
+                 DELIVERY ADDRESS SECTION
+            ====================================== -->
+            <section class="checkout-section">
+
+                <div class="checkout-section-header">
+                    <div class="section-title-wrap">
+                        <span class="section-num">1</span>
+                        <h2>Select Delivery Address</h2>
+                    </div>
+
+                    <a href="{% url 'add_address' %}?next={% url 'checkout' %}" class="btn-link-action">
+                        + Add New Address
+                    </a>
+                </div>
+
+                {% if addresses %}
+
+                <form method="POST" id="checkout-form" class="checkout-main-form">
+                    {% csrf_token %}
+
+                    <div class="checkout-address-list">
+                        {% for address in addresses %}
+                        <label class="checkout-address-card {% if address.is_default %}is-default{% endif %}">
+                            <input
+                                type="radio"
+                                name="address_id"
+                                value="{{ address.id }}"
+                                {% if address.is_default %}
+                                    checked
+                                {% elif forloop.first and not addresses.0.is_default and forloop.first %}
+                                    checked
+                                {% endif %}
+                                required
+                            >
+
+                            <div class="checkout-address-content">
+                                <div class="checkout-address-header">
+                                    <span class="address-type-tag type-{{ address.address_type }}">
+                                        {% if address.address_type == 'home' %}
+                                            <i class="fa-solid fa-house"></i> Home
+                                        {% elif address.address_type == 'work' %}
+                                            <i class="fa-solid fa-briefcase"></i> Work
+                                        {% else %}
+                                            <i class="fa-solid fa-location-dot"></i> Other
+                                        {% endif %}
+                                    </span>
+
+                                    {% if address.is_default %}
+                                        <span class="default-badge">
+                                            <i class="fa-solid fa-star"></i> Default
+                                        </span>
+                                    {% endif %}
+                                </div>
+
+                                <strong class="checkout-address-name">
+                                    {{ address.full_name }}
+                                </strong>
+
+                                <p class="checkout-address-text">
+                                    {{ address.address_line_1 }}
+                                    {% if address.address_line_2 %}, {{ address.address_line_2 }}{% endif %}
+                                </p>
+
+                                {% if address.landmark %}
+                                <p class="checkout-address-landmark">
+                                    <span class="text-slate">Landmark:</span> {{ address.landmark }}
+                                </p>
+                                {% endif %}
+
+                                <p class="checkout-address-city">
+                                    {{ address.city }}, {{ address.state }} &ndash; <strong>{{ address.pincode }}</strong>
+                                </p>
+
+                                <p class="checkout-address-phone">
+                                    <i class="fa-solid fa-phone"></i> {{ address.phone }}
+                                </p>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+
+                    <!-- =================================
+                         PAYMENT METHOD
+                    ================================== -->
+                    <div class="checkout-section-header" style="margin-top: 32px;">
+                        <div class="section-title-wrap">
+                            <span class="section-num">2</span>
+                            <h2>Payment Method</h2>
+                        </div>
+                    </div>
+
+                    <div class="checkout-payment-list">
+                        <!-- COD -->
+                        <label class="payment-method-card">
+                            <input
+                                type="radio"
+                                name="payment_method"
+                                value="cod"
+                                checked
+                            >
+                            <div class="payment-card-content">
+                                <div class="payment-title-row">
+                                    <span class="payment-icon"><i class="fa-solid fa-indian-rupee-sign"></i></span>
+                                    <strong>Cash on Delivery (COD)</strong>
+                                </div>
+                                <p>Pay with cash or UPI at your doorstep when your order is delivered.</p>
+                            </div>
+                        </label>
+
+                        <!-- RAZORPAY -->
+                        <label class="payment-method-card">
+                            <input
+                                type="radio"
+                                name="payment_method"
+                                value="razorpay"
+                            >
+                            <div class="payment-card-content">
+                                <div class="payment-title-row">
+                                    <span class="payment-icon"><i class="fa-solid fa-credit-card"></i></span>
+                                    <strong>Online Payment (Razorpay)</strong>
+                                </div>
+                                <p>UPI, Credit/Debit Cards, Net Banking, and Wallets with 100% Secure Checkout.</p>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- =================================
+                         CONTINUE BUTTON
+                    ================================== -->
+                    <button
+                        type="submit"
+                        class="btn-large btn-primary place-order-button"
+                        id="continue-payment-button"
+                    >
+                        Proceed to Place Order <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+
+                </form>
+
+                {% else %}
+
+                <div class="empty-address-notice">
+                    <div class="empty-icon" style="font-size: 40px; color: var(--slate-light); margin-bottom: 12px;">
+                        <i class="fa-solid fa-location-dot"></i>
+                    </div>
+                    <h3>No Saved Delivery Address</h3>
+                    <p>Please add a delivery address to proceed with your checkout.</p>
+                    <a href="{% url 'add_address' %}?next={% url 'checkout' %}" class="btn-primary">
+                        <i class="fa-solid fa-plus"></i> Add Delivery Address
+                    </a>
+                </div>
+
+                {% endif %}
+
+            </section>
+
+        </div>
+
+        <!-- =========================================
+             RIGHT SIDE: ORDER SUMMARY
+        ========================================== -->
+        <div class="checkout-summary-sidebar">
+            <div class="checkout-summary-card">
+                <h2><i class="fa-solid fa-receipt"></i> Order Summary</h2>
+
+                <div class="summary-items-list">
+                    {% for item in cart_items %}
+                    <div class="summary-item-row">
+                        <div class="summary-item-info">
+                            <strong class="summary-item-name">{{ item.product.name }}</strong>
+                            {% if item.size %}
+                            <span class="summary-item-size" style="font-size: 12px; color: #475569; display: block; margin: 2px 0;">Size: <strong>{{ item.size }}</strong></span>
+                            {% endif %}
+                            <span class="summary-item-qty">Qty: {{ item.quantity }} &times; ₹{{ item.product.discounted_price|floatformat:2 }}</span>
+                        </div>
+                        <span class="summary-item-price">
+                            ₹{{ item.total_price|floatformat:2 }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <hr class="summary-divider">
+
+                <div class="summary-calc-row">
+                    <span>Items Subtotal</span>
+                    <span>₹{{ cart.subtotal|floatformat:2 }}</span>
+                </div>
+
+                <div class="summary-calc-row">
+                    <span>Delivery Charges</span>
+                    {% if cart.delivery_charge == 0 %}
+                        <span class="text-success font-semibold">FREE</span>
+                    {% else %}
+                        <span>₹{{ cart.delivery_charge|floatformat:2 }}</span>
+                    {% endif %}
+                </div>
+
+                <hr class="summary-divider">
+
+                <div class="summary-total-row">
+                    <strong>Total Amount</strong>
+                    <strong class="total-price-tag">₹{{ cart.total_with_delivery|floatformat:2 }}</strong>
+                </div>
+
+                <div class="checkout-guarantee">
+                    <span><i class="fa-solid fa-shield-halved"></i> 256-Bit SSL Encrypted Checkout</span>
+                    <span><i class="fa-solid fa-circle-check"></i> 100% Genuine Marketplace Products</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const checkoutForm = document.getElementById("checkout-form");
+    if (checkoutForm) {
+        checkoutForm.addEventListener("submit", function(event) {
+            const paymentMethodInput = document.querySelector('input[name="payment_method"]:checked');
+            const paymentMethod = paymentMethodInput ? paymentMethodInput.value : "cod";
+
+            if (paymentMethod === "razorpay") {
+                event.preventDefault();
+                checkoutForm.action = "{% url 'create_razorpay_order' %}";
+                checkoutForm.submit();
+            }
+        });
+    }
+});
+</script>
+
+{% endblock %}

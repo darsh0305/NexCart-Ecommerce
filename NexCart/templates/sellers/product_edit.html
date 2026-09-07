@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Edit {{ product.name }} - NexCart Seller
+{% endblock %}
+
+{% block content %}
+<div class="seller-container form-page-container">
+
+    <div class="seller-header">
+        <div>
+            <div class="breadcrumbs">
+                <a href="{% url 'seller_dashboard' %}">Dashboard</a> &rsaquo; 
+                <a href="{% url 'seller_products' %}">My Products</a> &rsaquo; 
+                <span>Edit Product</span>
+            </div>
+            <h1>Edit Product</h1>
+            <p>Update information, pricing, stock levels, or images for {{ product.name }}.</p>
+        </div>
+    </div>
+
+    <div class="seller-form-card">
+        <form method="POST" enctype="multipart/form-data" class="seller-form">
+            {% csrf_token %}
+
+            <div class="form-section">
+                <h3>Basic Information</h3>
+                
+                <div class="form-group">
+                    <label for="name">Product Name <span class="required">*</span></label>
+                    <input type="text" id="name" name="name" value="{{ product.name }}" required class="form-control">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group col">
+                        <label for="category">Category <span class="required">*</span></label>
+                        <select id="category" name="category" required class="form-control">
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" {% if product.category.id == category.id %}selected{% endif %}>{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group col">
+                        <label for="brand">Brand / Manufacturer</label>
+                        <input type="text" id="brand" name="brand" value="{{ product.brand }}" class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="author">Author (For Books & Education)</label>
+                    <input type="text" id="author" name="author" value="{{ product.author }}" class="form-control">
+                </div>
+
+                <div class="form-group" id="size-field-group" style="display: none;">
+                    <label for="size">Size (For Fashion Products)</label>
+                    <select id="size" name="size" class="form-control">
+                        <option value="">Select Size (Optional / Default)</option>
+                        <option value="S" {% if product.size == 'S' %}selected{% endif %}>S (Small)</option>
+                        <option value="M" {% if product.size == 'M' %}selected{% endif %}>M (Medium)</option>
+                        <option value="L" {% if product.size == 'L' %}selected{% endif %}>L (Large)</option>
+                        <option value="XL" {% if product.size == 'XL' %}selected{% endif %}>XL (Extra Large)</option>
+                        <option value="XXL" {% if product.size == 'XXL' %}selected{% endif %}>XXL (Double Extra Large)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Product Description <span class="required">*</span></label>
+                    <textarea id="description" name="description" rows="5" required class="form-control">{{ product.description }}</textarea>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Pricing & Stock</h3>
+
+                <div class="form-row">
+                    <div class="form-group col">
+                        <label for="price">Regular Price (₹) <span class="required">*</span></label>
+                        <input type="number" step="0.01" min="0" id="price" name="price" value="{{ product.price }}" required class="form-control">
+                    </div>
+
+                    <div class="form-group col">
+                        <label for="discount_percentage">Discount Percentage (%)</label>
+                        <input type="number" step="0.01" min="0" max="100" id="discount_percentage" name="discount_percentage" value="{{ product.discount_percentage }}" class="form-control">
+                    </div>
+                </div>
+
+                <!-- Size Wise Stock (Only for Fashion) -->
+                <div id="size-stocks-section" style="display: none; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                    <label style="font-weight: 700; color: var(--navy); display: block; margin-bottom: 4px;">
+                        <i class="fa-solid fa-boxes-stacked"></i> Size-Wise Stock Quantities (S, M, L, XL, XXL)
+                    </label>
+                    <small style="display: block; color: var(--slate); margin-bottom: 12px;">Specify individual inventory stock for each size. Total stock will update automatically.</small>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="size_stock_s" style="font-size: 13px; font-weight: 700;">Size S</label>
+                            <input type="number" min="0" id="size_stock_s" name="size_stock_s" value="{{ size_variant_map.S|default:0 }}" class="form-control size-stock-input">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="size_stock_m" style="font-size: 13px; font-weight: 700;">Size M</label>
+                            <input type="number" min="0" id="size_stock_m" name="size_stock_m" value="{{ size_variant_map.M|default:0 }}" class="form-control size-stock-input">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="size_stock_l" style="font-size: 13px; font-weight: 700;">Size L</label>
+                            <input type="number" min="0" id="size_stock_l" name="size_stock_l" value="{{ size_variant_map.L|default:0 }}" class="form-control size-stock-input">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="size_stock_xl" style="font-size: 13px; font-weight: 700;">Size XL</label>
+                            <input type="number" min="0" id="size_stock_xl" name="size_stock_xl" value="{{ size_variant_map.XL|default:0 }}" class="form-control size-stock-input">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="size_stock_xxl" style="font-size: 13px; font-weight: 700;">Size XXL</label>
+                            <input type="number" min="0" id="size_stock_xxl" name="size_stock_xxl" value="{{ size_variant_map.XXL|default:0 }}" class="form-control size-stock-input">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group col">
+                        <label for="stock">Total Inventory Stock <span class="required">*</span></label>
+                        <input type="number" min="0" id="stock" name="stock" value="{{ product.stock }}" required class="form-control">
+                    </div>
+
+                    <div class="form-group col">
+                        <label for="low_stock_threshold">Low Stock Alert Threshold</label>
+                        <input type="number" min="1" id="low_stock_threshold" name="low_stock_threshold" value="{{ product.low_stock_threshold }}" class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="status">Product Listing Status</label>
+                    <select id="status" name="status" class="form-control">
+                        <option value="active" {% if product.status == 'active' %}selected{% endif %}>Active (Visible &amp; Purchasable)</option>
+                        <option value="draft" {% if product.status == 'draft' %}selected{% endif %}>Draft (Hidden from Store)</option>
+                        <option value="inactive" {% if product.status == 'inactive' %}selected{% endif %}>Inactive (Hidden from Store)</option>
+                        <option value="out_of_stock" {% if product.status == 'out_of_stock' %}selected{% endif %}>Out of Stock (Visible, Add to Cart Disabled)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Product Media</h3>
+
+                <div class="form-group">
+                    <label>Current Main Image</label>
+                    {% if product.image %}
+                    <div class="current-image-preview">
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}" style="max-height: 120px; border-radius: 8px;">
+                    </div>
+                    {% endif %}
+                    <label for="image" style="margin-top: 10px;">Replace Main Image</label>
+                    <input type="file" id="image" name="image" accept="image/*" class="form-file-input">
+                </div>
+
+                <div class="form-group">
+                    <label for="additional_images">Add More Gallery Images</label>
+                    <input type="file" id="additional_images" name="additional_images" accept="image/*" multiple class="form-file-input">
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary btn-submit">Save Changes</button>
+                <a href="{% url 'seller_products' %}" class="btn-secondary">Cancel</a>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const categorySelect = document.getElementById('category');
+    const sizeGroup = document.getElementById('size-field-group');
+    const sizeStocksSection = document.getElementById('size-stocks-section');
+    const stockInput = document.getElementById('stock');
+    const sizeStockInputs = document.querySelectorAll('.size-stock-input');
+
+    function calculateTotalStock() {
+        let total = 0;
+        sizeStockInputs.forEach(input => {
+            total += parseInt(input.value || 0, 10);
+        });
+        if (stockInput && total > 0) {
+            stockInput.value = total;
+        }
+    }
+
+    sizeStockInputs.forEach(input => {
+        input.addEventListener('input', calculateTotalStock);
+    });
+
+    function toggleSizeField() {
+        if (!categorySelect) return;
+        const selectedText = categorySelect.options[categorySelect.selectedIndex]?.text?.toLowerCase() || '';
+        const isFashion = selectedText.includes('fashion');
+
+        if (sizeGroup) sizeGroup.style.display = isFashion ? 'block' : 'none';
+        if (sizeStocksSection) sizeStocksSection.style.display = isFashion ? 'block' : 'none';
+    }
+
+    if (categorySelect) {
+        categorySelect.addEventListener('change', toggleSizeField);
+        toggleSizeField();
+    }
+});
+</script>
+{% endblock %}

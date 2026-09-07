@@ -1,0 +1,182 @@
+{% extends "admin/base_site.html" %}
+
+
+{% block extrastyle %}
+
+{{ block.super }}
+
+<link
+    rel="stylesheet"
+    href="/static/css/admin-dashboard.css"
+>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="dashboard">
+
+    <h1>
+        NexCart Dashboard
+    </h1>
+
+
+    <div class="dashboard-cards">
+
+        <div class="dashboard-card">
+
+            <h3>
+                Total Orders
+            </h3>
+
+            <strong>
+                {{ total_orders }}
+            </strong>
+
+        </div>
+
+
+        <div class="dashboard-card">
+
+            <h3>
+                Total Customers
+            </h3>
+
+            <strong>
+                {{ total_customers }}
+            </strong>
+
+        </div>
+
+
+        <div class="dashboard-card">
+
+            <h3>
+                Total Products
+            </h3>
+
+            <strong>
+                {{ total_products }}
+            </strong>
+
+        </div>
+
+
+        <div class="dashboard-card">
+
+            <h3>
+                Paid Orders
+            </h3>
+
+            <strong>
+                {{ paid_orders }}
+            </strong>
+
+        </div>
+
+
+        <div class="dashboard-card">
+
+            <h3>
+                Pending Orders
+            </h3>
+
+            <strong>
+                {{ pending_orders }}
+            </strong>
+
+        </div>
+
+
+        <div class="dashboard-card">
+
+            <h3>
+                Total Revenue
+            </h3>
+
+            <strong>
+                ₹{{ total_revenue }}
+            </strong>
+
+        </div>
+
+    </div>
+
+
+    <div class="dashboard-section">
+
+        <h2>
+            Recent Orders
+        </h2>
+
+        <table>
+
+            <thead>
+
+                <tr>
+                    <th>Order</th>
+                    <th>Customer</th>
+                    <th>Amount</th>
+                    <th>Payment</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for order in recent_orders %}
+
+                <tr>
+
+                    <td>
+                        {{ order.order_number }}
+                    </td>
+
+                    <td>
+                        {{ order.user.username }}
+                    </td>
+
+                    <td>
+                        ₹{{ order.total_amount }}
+                    </td>
+
+                    <td>
+                        <span class="badge badge-{{ order.payment_status }}">
+                            {{ order.get_payment_status_display }}
+                        </span>
+                    </td>
+
+                    <td>
+                        <span class="badge badge-{{ order.status }}">
+                            {{ order.get_status_display }}
+                        </span>
+                    </td>
+
+                    <td>
+                        {{ order.created_at|date:"d M Y" }}
+                    </td>
+
+                </tr>
+
+                {% empty %}
+
+                <tr>
+                    <td colspan="6">
+                        No orders yet.
+                    </td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}

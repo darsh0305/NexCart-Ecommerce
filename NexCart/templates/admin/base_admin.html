@@ -1,0 +1,76 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        {% block title %}Admin Dashboard - NexCart{% endblock %}
+    </title>
+    <link rel="icon" href="{% static 'images/logo.jpeg' %}" type="image/jpeg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="admin-body">
+
+    <!-- Trust / Notification Strip -->
+    <div class="topbar">
+        <div class="container">
+            <span>🛡️ NexCart Platform Administration</span>
+            <span>⚡ Superuser Security &amp; Control</span>
+            <span>📊 Live Market Analytics</span>
+        </div>
+    </div>
+
+    <!-- Main Navigation Bar (Identical across customer, seller, and admin) -->
+    {% include 'includes/navbar.html' %}
+
+    <!-- Messages -->
+    {% include 'includes/messages.html' %}
+
+    <div class="admin-layout">
+        <!-- Admin Sidebar -->
+        {% include 'includes/admin_sidebar.html' %}
+
+        <div class="admin-main">
+            <!-- Subheader Bar for Admin -->
+            <div class="admin-topbar-header">
+                <div class="admin-topbar-left">
+                    <button class="mobile-sidebar-toggle" id="adminMobileToggle" type="button" aria-label="Toggle Admin Menu">
+                        ☰ Admin Menu
+                    </button>
+                    <span class="admin-topbar-badge">🛡️ Super Admin Control</span>
+                </div>
+                <div class="admin-topbar-right">
+                    <a href="{% url 'home' %}" class="btn-topbar-action" title="View Storefront">
+                        <span>🛍️ Storefront</span>
+                    </a>
+                    <a href="/admin/" class="btn-topbar-action django-link" target="_blank" rel="noopener">
+                        <span>⚙️ Core Django Admin</span>
+                    </a>
+                    <span class="admin-user-pill">
+                        👤 {{ request.user.username }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Page Content -->
+            <div class="admin-content-wrapper">
+                {% block content %}
+                {% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    {% include 'includes/footer.html' %}
+
+    <!-- Scripts -->
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block extra_js %}
+    {% endblock %}
+</body>
+</html>

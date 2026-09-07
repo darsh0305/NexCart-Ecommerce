@@ -1,0 +1,57 @@
+{% load static %}
+<aside class="seller-sidebar" id="sellerSidebar">
+    <div class="seller-sidebar-logo">
+        <a href="{% url 'home' %}">
+            <img src="{% static 'images/logo.jpeg' %}" alt="NexCart" class="brand-logo">
+            <span>Nex<span class="logo-accent">Cart</span></span>
+        </a>
+        <span class="seller-sidebar-tag">Seller</span>
+    </div>
+
+    <nav>
+        <a href="{% url 'seller_dashboard' %}" class="{% if request.resolver_match.url_name == 'seller_dashboard' %}active{% endif %}">
+            <span class="sidebar-nav-icon"><i class="fa-solid fa-gauge-high"></i></span>
+            <span>Dashboard</span>
+        </a>
+
+        <a href="{% url 'seller_products' %}" class="{% if request.resolver_match.url_name == 'seller_products' %}active{% endif %}">
+            <span class="sidebar-nav-icon"><i class="fa-solid fa-boxes-stacked"></i></span>
+            <span>My Products</span>
+        </a>
+
+        <a href="{% url 'seller_product_add' %}" class="{% if request.resolver_match.url_name == 'seller_product_add' %}active{% endif %}">
+            <span class="sidebar-nav-icon"><i class="fa-solid fa-circle-plus"></i></span>
+            <span>Add Product</span>
+        </a>
+
+        <a href="{% url 'seller_orders' %}" class="{% if request.resolver_match.url_name == 'seller_orders' %}active{% endif %}">
+            <span class="sidebar-nav-icon"><i class="fa-solid fa-truck-ramp-box"></i></span>
+            <span>Orders</span>
+        </a>
+
+        <a href="{% url 'seller_sales_report' %}" class="{% if request.resolver_match.url_name == 'seller_sales_report' %}active{% endif %}">
+            <span class="sidebar-nav-icon"><i class="fa-solid fa-chart-line"></i></span>
+            <span>Sales Reports</span>
+        </a>
+
+        <div class="sidebar-divider"></div>
+
+        <a href="{% url 'home' %}">
+            <span class="sidebar-nav-icon"><i class="fa-solid fa-shop"></i></span>
+            <span>Customer Storefront</span>
+        </a>
+
+        <a href="{% url 'profile' %}">
+            <span class="sidebar-nav-icon"><i class="fa-solid fa-circle-user"></i></span>
+            <span>Seller Profile</span>
+        </a>
+
+        <form method="POST" action="{% url 'logout' %}" class="sidebar-logout-form">
+            {% csrf_token %}
+            <button type="submit" class="sidebar-logout-btn">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-arrow-right-from-bracket"></i></span>
+                <span>Logout</span>
+            </button>
+        </form>
+    </nav>
+</aside>

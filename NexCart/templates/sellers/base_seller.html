@@ -1,0 +1,82 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        {% block title %}Seller Dashboard - NexCart{% endblock %}
+    </title>
+    <link rel="icon" href="{% static 'images/logo.jpeg' %}" type="image/jpeg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome 6 Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="seller-body">
+
+    <!-- Trust / Notification Strip (Same as customer side) -->
+    <div class="topbar">
+        <div class="container">
+            <span><i class="fa-solid fa-truck-fast"></i> Free delivery on orders over ₹499</span>
+            <span><i class="fa-solid fa-shield-halved"></i> Verified Multi-Vendor Hub</span>
+            <span><i class="fa-solid fa-lock"></i> Secure Payments &amp; COD</span>
+        </div>
+    </div>
+
+    <!-- Main Navigation Bar (Identical across customer, seller, and admin) -->
+    {% include 'includes/navbar.html' %}
+
+    <!-- Messages -->
+    {% include 'includes/messages.html' %}
+
+    <!-- Seller Layout with Sidebar & Content -->
+    <div class="seller-layout">
+        <!-- Seller Sidebar -->
+        {% include 'includes/seller_sidebar.html' %}
+
+        <div class="seller-main">
+            <!-- Mobile Toggle / Subheader Bar for Seller -->
+            <div class="seller-topbar-header">
+                <div class="seller-topbar-left">
+                    <button class="mobile-sidebar-toggle" id="sellerMobileToggle" type="button" aria-label="Toggle Sidebar Menu">
+                        <i class="fa-solid fa-bars-staggered"></i> Seller Menu
+                    </button>
+                    <div class="seller-topbar-breadcrumb">
+                        <span class="seller-pill"><i class="fa-solid fa-store"></i> {{ request.user.seller_profile.store_name|default:"Seller Portal" }}</span>
+                    </div>
+                </div>
+
+                <div class="seller-topbar-right">
+                    <a href="{% url 'home' %}" class="btn-topbar-action" title="View Storefront">
+                        <span><i class="fa-solid fa-shop"></i> Storefront</span>
+                    </a>
+                    <a href="{% url 'seller_products' %}" class="btn-topbar-action" title="Inventory">
+                        <span><i class="fa-solid fa-boxes-stacked"></i> Products</span>
+                    </a>
+                    <a href="{% url 'profile' %}" class="seller-avatar-pill">
+                        <span><i class="fa-solid fa-circle-user"></i> {{ request.user.username }}</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Page Content -->
+            <div class="seller-content-wrapper">
+                {% block content %}
+                {% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer (Same as customer side) -->
+    {% include 'includes/footer.html' %}
+
+    <!-- Scripts -->
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block extra_js %}
+    {% endblock %}
+</body>
+</html>

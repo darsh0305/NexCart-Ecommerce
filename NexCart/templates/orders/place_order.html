@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirm Order - NexCart{% endblock %}
+
+{% block content %}
+<div class="place-order-page">
+    <h1>Confirm Your Order</h1>
+
+    <div class="place-order-container">
+        
+        <div class="checkout-left">
+            <!-- ADDRESS -->
+            <div class="confirmation-card">
+                <h2>Delivery Address</h2>
+                <p><strong>{{ address.full_name }}</strong></p>
+                <p style="color: var(--slate); margin-top: 8px;">
+                    {{ address.address_line_1 }}{% if address.address_line_2 %}, {{ address.address_line_2 }}{% endif %}
+                </p>
+                {% if address.landmark %}
+                    <p style="color: var(--slate); font-size: 13.5px;">Landmark: {{ address.landmark }}</p>
+                {% endif %}
+                <p style="color: var(--slate);">{{ address.city }}, {{ address.state }} - <strong>{{ address.pincode }}</strong></p>
+                <p style="color: var(--slate); margin-top: 8px;">Phone: 📞 {{ address.phone }}</p>
+            </div>
+
+
+            <!-- PAYMENT -->
+            <div class="confirmation-card">
+                <h2>Payment Method</h2>
+                <div class="payment-option">
+                    <span style="color: var(--blue-dark);">✓</span> Cash on Delivery
+                </div>
+            </div>
+        </div>
+
+        <!-- ORDER -->
+        <div class="checkout-summary">
+            <h2>Order Summary</h2>
+            
+            <div class="cart-items">
+                {% for item in cart_items %}
+                    <div class="checkout-item">
+                        <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
+                            {% if item.product.image %}
+                                <div class="checkout-product-image">
+                                    <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
+                                </div>
+                            {% endif %}
+                            <div style="flex: 1; min-width: 0;">
+                                <strong style="display: block; word-break: break-word;">{{ item.product.name }}</strong>
+                                <p style="margin-top: 4px; color: var(--slate); font-size: 13.5px;">Qty: {{ item.quantity }}</p>
+                            </div>
+                        </div>
+                        <span style="font-weight: 700; color: var(--navy); font-size: 15px; white-space: nowrap; margin-left: 12px;">₹{{ item.total_price|floatformat:2 }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <hr style="border-top: 1px solid var(--border); margin: 20px 0;">
+
+            <div class="summary-row">
+                <span>Items Subtotal</span>
+                <strong>₹{{ cart.subtotal|floatformat:2 }}</strong>
+            </div>
+
+            <div class="summary-row" style="margin-top: 6px;">
+                <span>Delivery Charges</span>
+                {% if cart.delivery_charge == 0 %}
+                    <strong style="color: var(--green);">FREE</strong>
+                {% else %}
+                    <strong>₹{{ cart.delivery_charge|floatformat:2 }}</strong>
+                {% endif %}
+            </div>
+
+            <div class="summary-total" style="margin-top: 12px;">
+                <strong>Total</strong>
+                <strong>₹{{ cart.total_with_delivery|floatformat:2 }}</strong>
+            </div>
+
+            <form method="POST" action="{% url 'place_order' address.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-large btn-primary" style="width: 100%; margin-top: 16px;">
+                    Place Order Now
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

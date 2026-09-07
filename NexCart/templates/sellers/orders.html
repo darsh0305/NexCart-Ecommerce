@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Seller Orders - NexCart Seller
+{% endblock %}
+
+{% block content %}
+<div class="seller-container">
+
+    <div class="seller-header">
+        <div>
+            <div class="breadcrumbs">
+                <a href="{% url 'seller_dashboard' %}">Dashboard</a> &rsaquo; <span>Orders</span>
+            </div>
+            <h1>Orders Management</h1>
+            <p>Customer orders containing your listed products.</p>
+        </div>
+    </div>
+
+    {% if orders_data %}
+    <div class="seller-orders-list">
+        {% for item in orders_data %}
+        <div class="seller-order-card">
+            <div class="order-card-header">
+                <div>
+                    <span class="order-id-label">Order #{{ item.order.order_number }}</span>
+                    <span class="order-timestamp">{{ item.order.created_at|date:"d M Y, h:i A" }}</span>
+                </div>
+                <div class="order-header-badges">
+                    <span class="order-status {{ item.order.status }}">{{ item.order.get_status_display }}</span>
+                    <span class="payment-badge {{ item.order.payment_status }}">Payment: {{ item.order.get_payment_status_display }} ({{ item.order.get_payment_method_display }})</span>
+                </div>
+            </div>
+
+            <div class="order-customer-info">
+                <div class="customer-badge">
+                    <strong><i class="fa-solid fa-user"></i> Customer:</strong> {{ item.order.user.get_full_name|default:item.order.user.username }} ({{ item.order.user.email }})
+                </div>
+                <div class="shipping-badge">
+                    <strong><i class="fa-solid fa-location-dot"></i> Ship To:</strong> {{ item.order.address.full_name }}, {{ item.order.address.city }}, {{ item.order.address.state }} - {{ item.order.address.pincode }} | <i class="fa-solid fa-phone"></i> {{ item.order.address.phone }}
+                </div>
+            </div>
+
+            <div class="order-items-table">
+                <table class="seller-table items-table">
+                    <thead>
+                        <tr>
+                            <th>Item Name</th>
+                            <th>Unit Price</th>
+                            <th>Qty</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order_item in item.seller_items %}
+                        <tr>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    {% if order_item.product and order_item.product.image %}
+                                        <img src="{{ order_item.product.image.url }}" alt="{{ order_item.product_name }}" style="width: 44px; height: 44px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); flex-shrink: 0;">
+                                    {% else %}
+                                        <div style="width: 44px; height: 44px; border-radius: 6px; background: var(--bg); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--slate-light); flex-shrink: 0;">
+                                            <i class="fa-solid fa-image"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div style="display: flex; flex-direction: column; gap: 3px;">
+                                        <strong style="word-break: break-word;">{{ order_item.product_name }}</strong>
+                                        {% if order_item.size %}
+                                            <div>
+                                                <span class="seller-size-pill">Size: {{ order_item.size }}</span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>₹{{ order_item.price|floatformat:2 }}</td>
+                            <td>{{ order_item.quantity }}</td>
+                            <td><strong>₹{{ order_item.total_price|floatformat:2 }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="order-card-footer">
+                <form method="POST" action="{% url 'update_order_status' item.order.id %}" class="seller-order-status-form">
+                    {% csrf_token %}
+                    <div class="status-form-inner">
+                        <span class="status-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+                            Delivery Status:
+                        </span>
+                        <div class="status-select-wrap">
+                            <select name="status" id="status_{{ item.order.id }}" class="status-select order-delivery-select">
+                                <option value="pending" {% if item.order.status == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="confirmed" {% if item.order.status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                                <option value="processing" {% if item.order.status == 'processing' %}selected{% endif %}>Processing</option>
+                                <option value="shipped" {% if item.order.status == 'shipped' %}selected{% endif %}>Shipped</option>
+                                <option value="out_for_delivery" {% if item.order.status == 'out_for_delivery' %}selected{% endif %}>Out for Delivery</option>
+                                <option value="delivered" {% if item.order.status == 'delivered' %}selected{% endif %}>Delivered</option>
+                                <option value="cancelled" {% if item.order.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="status-update-btn">Update Status</button>
+                    </div>
+                </form>
+
+                <div class="seller-subtotal">
+                    <span>Your Order Value:</span>
+                    <strong>₹{{ item.seller_subtotal|floatformat:2 }}</strong>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state-card">
+        <div class="empty-icon">🛍️</div>
+        <h2>No Orders Received Yet</h2>
+        <p>When customers buy items listed by your store, the orders will show up here.</p>
+        <a href="{% url 'seller_products' %}" class="btn-primary">View Products</a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

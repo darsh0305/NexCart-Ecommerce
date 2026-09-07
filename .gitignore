@@ -1,0 +1,44 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Django
+*.sqlite3
+*.log
+staticfiles/
+media/
+!media/.gitkeep
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Local data
+*.tmp
+*.bak
+
+# Node (if added later)
+node_modules/

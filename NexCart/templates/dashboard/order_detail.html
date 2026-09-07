@@ -1,0 +1,413 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}
+Order #{{ order.order_number }} — Admin Management — NexCart
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="admin-page">
+
+    <!-- Admin Breadcrumb Navigation -->
+    <div class="admin-breadcrumb">
+        <a href="{% url 'admin_dashboard' %}">⚡ Admin Dashboard</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{% url 'admin_orders' %}">Orders</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">Order #{{ order.order_number }}</span>
+    </div>
+
+    <!-- Header Section -->
+    <div class="admin-page-header">
+        <div class="order-header-info">
+            <div class="order-title-row">
+                <h1>Order #{{ order.order_number }}</h1>
+                <span class="order-status {{ order.status }}">
+                    {{ order.get_status_display }}
+                </span>
+                <span class="badge badge-payment-{{ order.payment_status }}">
+                    {{ order.get_payment_status_display }}
+                </span>
+            </div>
+            <p class="order-meta-text">
+                Placed by <strong>{{ order.user.get_full_name|default:order.user.username }}</strong> ({{ order.user.email }}) on <strong>{{ order.created_at|date:"d M Y, h:i A" }}</strong>
+            </p>
+        </div>
+
+        <div class="admin-header-actions">
+            <a
+                href="{% url 'view_invoice' order.id %}"
+                class="btn-primary"
+                target="_blank"
+                title="View Official Tax Invoice"
+            >
+                <i class="fa-solid fa-file-invoice"></i> View Invoice
+            </a>
+
+            <a href="{% url 'admin_orders' %}" class="btn-secondary">
+                <i class="fa-solid fa-arrow-left"></i> Back to Orders
+            </a>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         UPDATE DELIVERY STATUS CONTROL BAR
+    ====================================================== -->
+    <div class="admin-info-card status-updater-card">
+        <div class="card-title-row">
+            <h2><i class="fa-solid fa-bolt"></i> Update Delivery &amp; Fulfillment Status</h2>
+            <span class="current-status-label">
+                Current: <strong class="text-navy">{{ order.get_status_display }}</strong>
+            </span>
+        </div>
+
+        <form method="POST" action="{% url 'admin_update_order_status' order.id %}" class="admin-status-form">
+            {% csrf_token %}
+            <div class="status-select-group">
+                <label for="adminStatusSelect">Select New Status:</label>
+                <select id="adminStatusSelect" name="status" class="admin-status-select">
+                    <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="confirmed" {% if order.status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                    <option value="processing" {% if order.status == 'processing' %}selected{% endif %}>Processing</option>
+                    <option value="shipped" {% if order.status == 'shipped' %}selected{% endif %}>Shipped</option>
+                    <option value="out_for_delivery" {% if order.status == 'out_for_delivery' %}selected{% endif %}>Out for Delivery</option>
+                    <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Delivered</option>
+                    <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn-primary btn-update-status">
+                Save &amp; Update Status
+            </button>
+        </form>
+    </div>
+
+    <!-- Visual Tracking Step Progress -->
+    <div class="admin-info-card tracking-card">
+        <div class="card-title-row">
+            <h2><i class="fa-solid fa-route"></i> Customer Tracking View</h2>
+        </div>
+
+        {% if order.status == 'cancelled' %}
+            <div class="cancelled-notice">
+                <span class="cancelled-icon"><i class="fa-solid fa-ban"></i></span>
+                <div>
+                    <strong>Order Cancelled</strong>
+                    <p>This order has been marked as cancelled. Any reserved inventory has been restored to product stock.</p>
+                </div>
+            </div>
+        {% else %}
+            <div class="order-tracking">
+                <div class="tracking-step completed">
+                    <div class="tracking-circle">✓</div>
+                    <div class="tracking-step-info">
+                        <strong>Order Placed</strong>
+                        <p>Received</p>
+                    </div>
+                </div>
+
+                <div class="tracking-line {% if order.status == 'confirmed' or order.status == 'processing' or order.status == 'shipped' or order.status == 'out_for_delivery' or order.status == 'delivered' %}completed{% endif %}"></div>
+
+                <div class="tracking-step {% if order.status == 'confirmed' or order.status == 'processing' or order.status == 'shipped' or order.status == 'out_for_delivery' or order.status == 'delivered' %}completed{% endif %}">
+                    <div class="tracking-circle">{% if order.status == 'confirmed' or order.status == 'processing' or order.status == 'shipped' or order.status == 'out_for_delivery' or order.status == 'delivered' %}✓{% else %}2{% endif %}</div>
+                    <div class="tracking-step-info">
+                        <strong>Confirmed</strong>
+                        <p>Accepted</p>
+                    </div>
+                </div>
+
+                <div class="tracking-line {% if order.status == 'processing' or order.status == 'shipped' or order.status == 'out_for_delivery' or order.status == 'delivered' %}completed{% endif %}"></div>
+
+                <div class="tracking-step {% if order.status == 'processing' or order.status == 'shipped' or order.status == 'out_for_delivery' or order.status == 'delivered' %}completed{% endif %}">
+                    <div class="tracking-circle">{% if order.status == 'processing' or order.status == 'shipped' or order.status == 'out_for_delivery' or order.status == 'delivered' %}✓{% else %}3{% endif %}</div>
+                    <div class="tracking-step-info">
+                        <strong>Processing</strong>
+                        <p>Packing</p>
+                    </div>
+                </div>
+
+                <div class="tracking-line {% if order.status == 'shipped' or order.status == 'out_for_delivery' or order.status == 'delivered' %}completed{% endif %}"></div>
+
+                <div class="tracking-step {% if order.status == 'shipped' or order.status == 'out_for_delivery' or order.status == 'delivered' %}completed{% endif %}">
+                    <div class="tracking-circle">{% if order.status == 'shipped' or order.status == 'out_for_delivery' or order.status == 'delivered' %}✓{% else %}4{% endif %}</div>
+                    <div class="tracking-step-info">
+                        <strong>Shipped</strong>
+                        <p>In Transit</p>
+                    </div>
+                </div>
+
+                <div class="tracking-line {% if order.status == 'out_for_delivery' or order.status == 'delivered' %}completed{% endif %}"></div>
+
+                <div class="tracking-step {% if order.status == 'out_for_delivery' or order.status == 'delivered' %}completed{% endif %}">
+                    <div class="tracking-circle">{% if order.status == 'out_for_delivery' or order.status == 'delivered' %}✓{% else %}5{% endif %}</div>
+                    <div class="tracking-step-info">
+                        <strong>Out for Delivery</strong>
+                        <p>Courier Out</p>
+                    </div>
+                </div>
+
+                <div class="tracking-line {% if order.status == 'delivered' %}completed{% endif %}"></div>
+
+                <div class="tracking-step {% if order.status == 'delivered' %}completed{% endif %}">
+                    <div class="tracking-circle">{% if order.status == 'delivered' %}✓{% else %}6{% endif %}</div>
+                    <div class="tracking-step-info">
+                        <strong>Delivered</strong>
+                        <p>Completed</p>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- =====================================================
+         THREE-COLUMN INFORMATION GRID
+    ====================================================== -->
+    <div class="admin-info-grid">
+
+        <!-- Card 1: Customer Information -->
+        <div class="admin-info-card">
+            <div class="card-title-row">
+                <h3>👤 Customer Information</h3>
+            </div>
+            <div class="admin-card-details">
+                <div class="detail-row">
+                    <span class="detail-label">Name:</span>
+                    <strong class="detail-value">{{ order.user.get_full_name|default:order.user.username }}</strong>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Username:</span>
+                    <span class="detail-value">{{ order.user.username }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Email:</span>
+                    <a href="mailto:{{ order.user.email }}" class="detail-link">{{ order.user.email }}</a>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Phone:</span>
+                    <span class="detail-value">{{ order.address.phone|default:order.user.phone_number|default:"N/A" }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Account Role:</span>
+                    <span class="pill-badge pill-approved">{{ order.user.get_role_display|default:order.user.role|title }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Delivery & Shipping Address -->
+        <div class="admin-info-card">
+            <div class="card-title-row">
+                <h3>📍 Shipping Address</h3>
+            </div>
+            <div class="admin-card-details">
+                <div class="detail-row">
+                    <span class="detail-label">Recipient:</span>
+                    <strong class="detail-value">
+                        {% if order.shipping_name %}
+                            {{ order.shipping_name }}
+                        {% elif order.address %}
+                            {{ order.address.full_name }}
+                        {% else %}
+                            {{ order.user.get_full_name|default:order.user.username }}
+                        {% endif %}
+                    </strong>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Phone:</span>
+                    <span class="detail-value">
+                        📞 {% if order.shipping_phone %}{{ order.shipping_phone }}{% elif order.address %}{{ order.address.phone }}{% else %}N/A{% endif %}
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Address:</span>
+                    <span class="detail-value">
+                        {% if order.shipping_address %}
+                            {{ order.shipping_address }}
+                        {% elif order.address %}
+                            {{ order.address.address_line_1 }}{% if order.address.address_line_2 %}, {{ order.address.address_line_2 }}{% endif %}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </span>
+                </div>
+                {% if order.address.landmark and not order.shipping_address %}
+                <div class="detail-row">
+                    <span class="detail-label">Landmark:</span>
+                    <span class="detail-value">{{ order.address.landmark }}</span>
+                </div>
+                {% endif %}
+                <div class="detail-row">
+                    <span class="detail-label">City, State:</span>
+                    <span class="detail-value">
+                        {% if order.shipping_city %}
+                            {{ order.shipping_city }}, {{ order.shipping_state }}
+                        {% elif order.address %}
+                            {{ order.address.city }}, {{ order.address.state }}
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Pincode:</span>
+                    <strong class="detail-value">
+                        {% if order.shipping_pincode %}
+                            {{ order.shipping_pincode }}
+                        {% elif order.address %}
+                            {{ order.address.pincode }}
+                        {% endif %}
+                    </strong>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Card 3: Payment & Summary Details -->
+        <div class="admin-info-card">
+            <div class="card-title-row">
+                <h3>💳 Payment &amp; Total</h3>
+            </div>
+            <div class="admin-card-details">
+                <div class="detail-row">
+                    <span class="detail-label">Payment Method:</span>
+                    <strong class="detail-value">{{ order.get_payment_method_display }}</strong>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Payment Status:</span>
+                    <span class="badge badge-payment-{{ order.payment_status }}">
+                        {{ order.get_payment_status_display }}
+                    </span>
+                </div>
+                {% if order.razorpay_payment_id %}
+                <div class="detail-row">
+                    <span class="detail-label">Razorpay ID:</span>
+                    <span class="info-code">{{ order.razorpay_payment_id }}</span>
+                </div>
+                {% endif %}
+                <div class="detail-row">
+                    <span class="detail-label">Items Subtotal:</span>
+                    <span class="detail-value">₹{{ order.subtotal|floatformat:2 }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Delivery Charge:</span>
+                    <span class="detail-value">
+                        {% if order.delivery_charge == 0 %}
+                            <strong class="text-free">FREE</strong>
+                        {% else %}
+                            ₹{{ order.delivery_charge|floatformat:2 }}
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="detail-row total-highlight-row">
+                    <span class="detail-label"><strong>Grand Total:</strong></span>
+                    <strong class="total-price-text">₹{{ order.total_amount|floatformat:2 }}</strong>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- =====================================================
+         PURCHASED PRODUCTS & SELLER DETAILS
+    ====================================================== -->
+    <div class="admin-info-card">
+        <div class="card-title-row">
+            <h2><i class="fa-solid fa-boxes-stacked"></i> Purchased Products &amp; Seller Allocation ({{ order.items.count }})</h2>
+        </div>
+
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Seller / Store</th>
+                        <th>Unit Price</th>
+                        <th>Quantity</th>
+                        <th>Line Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in order.items.all %}
+                    <tr>
+                        <td>
+                            <div class="table-product-cell">
+                                {% if item.product and item.product.image %}
+                                    <img src="{{ item.product.image.url }}" alt="{{ item.product_name }}" class="table-product-img">
+                                {% else %}
+                                    <div class="table-product-placeholder">
+                                        <i class="fa-solid fa-image"></i>
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <strong class="product-table-name">
+                                        {% if item.product %}
+                                            <a href="{% url 'product_detail' item.product.slug %}" target="_blank" class="order-product-link">
+                                                {{ item.product_name }}
+                                            </a>
+                                        {% else %}
+                                            {{ item.product_name }}
+                                        {% endif %}
+                                    </strong>
+                                    {% if item.product and item.product.category %}
+                                        <span class="category-pill">{{ item.product.category.name }}</span>
+                                    {% endif %}
+                                    {% if item.size %}
+                                        <span class="seller-size-pill" style="margin-left: 4px;">Size: {{ item.size }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+
+                        <td>
+                            {% if item.product and item.product.seller and item.product.seller.seller_profile %}
+                                <div>
+                                    <strong>{{ item.product.seller.seller_profile.store_name }}</strong>
+                                    <div class="text-muted small">@{{ item.product.seller.username }}</div>
+                                </div>
+                            {% elif item.product and item.product.seller %}
+                                <div>
+                                    <strong>{{ item.product.seller.username }}</strong>
+                                </div>
+                            {% else %}
+                                <span class="badge-direct">NexCart Direct</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <strong>₹{{ item.price|floatformat:2 }}</strong>
+                        </td>
+
+                        <td>
+                            <span class="badge-item-count">&times; {{ item.quantity }}</span>
+                        </td>
+
+                        <td>
+                            <strong class="order-amount-text">₹{{ item.total_price|floatformat:2 }}</strong>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         BOTTOM PAGE ACTIONS
+    ====================================================== -->
+    <div class="admin-page-actions">
+        <a href="{% url 'admin_orders' %}" class="btn-secondary">
+            &larr; Back to All Orders
+        </a>
+
+        <a
+            href="{% url 'view_invoice' order.id %}"
+            class="btn-primary"
+            target="_blank"
+        >
+            <i class="fa-solid fa-file-invoice"></i> View Invoice
+        </a>
+
+        <a href="/admin/orders/order/{{ order.id }}/change/" class="btn-secondary" target="_blank" rel="noopener">
+            Open in Django Admin Console &rarr;
+        </a>
+    </div>
+
+</div>
+{% endblock %}

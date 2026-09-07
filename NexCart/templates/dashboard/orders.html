@@ -1,0 +1,197 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}
+Admin Orders — NexCart
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="admin-page">
+
+    <!-- Admin Breadcrumb Navigation -->
+    <div class="admin-breadcrumb">
+        <a href="{% url 'admin_dashboard' %}">⚡ Admin Dashboard</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">Orders</span>
+    </div>
+
+    <!-- Page Header -->
+    <div class="admin-page-header">
+        <div>
+            <h1>🚚 Order Management</h1>
+            <p>View, filter, search, and manage all customer purchases and fulfillment across all sellers.</p>
+        </div>
+
+        <div class="admin-header-actions">
+            <a href="{% url 'admin_dashboard' %}" class="btn-secondary">
+                &larr; Back to Dashboard
+            </a>
+            <a href="/admin/orders/order/" class="btn-admin-core" target="_blank" rel="noopener">
+                Django Admin Console &rarr;
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter & Search Bar -->
+    <div class="admin-filter-card">
+        <form method="GET" action="{% url 'admin_orders' %}" class="admin-filter-form">
+            <div class="filter-group filter-search">
+                <label for="adminOrderSearch">Search Orders</label>
+                <input
+                    type="text"
+                    id="adminOrderSearch"
+                    name="search"
+                    placeholder="Search by Order ID, #Number, Customer, Email..."
+                    value="{{ search }}"
+                >
+            </div>
+
+            <div class="filter-group">
+                <label for="adminOrderStatus">Delivery Status</label>
+                <select id="adminOrderStatus" name="status">
+                    <option value="">All Delivery Statuses</option>
+                    <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="confirmed" {% if selected_status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                    <option value="processing" {% if selected_status == 'processing' %}selected{% endif %}>Processing</option>
+                    <option value="shipped" {% if selected_status == 'shipped' %}selected{% endif %}>Shipped</option>
+                    <option value="out_for_delivery" {% if selected_status == 'out_for_delivery' %}selected{% endif %}>Out for Delivery</option>
+                    <option value="delivered" {% if selected_status == 'delivered' %}selected{% endif %}>Delivered</option>
+                    <option value="cancelled" {% if selected_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="adminOrderPayment">Payment Status</label>
+                <select id="adminOrderPayment" name="payment_status">
+                    <option value="">All Payment Statuses</option>
+                    <option value="pending" {% if selected_payment_status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="paid" {% if selected_payment_status == 'paid' %}selected{% endif %}>Paid</option>
+                    <option value="failed" {% if selected_payment_status == 'failed' %}selected{% endif %}>Failed</option>
+                    <option value="refunded" {% if selected_payment_status == 'refunded' %}selected{% endif %}>Refunded</option>
+                </select>
+            </div>
+
+            <div class="filter-actions">
+                <button type="submit" class="btn-primary">
+                    🔍 Filter
+                </button>
+
+                {% if search or selected_status or selected_payment_status %}
+                    <a href="{% url 'admin_orders' %}" class="btn-secondary btn-reset">
+                        ✕ Clear
+                    </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Orders Table Section -->
+    <div class="admin-card">
+        <div class="section-header-row">
+            <h2>
+                All Customer Orders
+                <span class="badge-count">({{ orders.count }})</span>
+            </h2>
+        </div>
+
+        {% if orders %}
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Date &amp; Time</th>
+                        <th>Items</th>
+                        <th>Total Amount</th>
+                        <th>Payment</th>
+                        <th>Delivery Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>
+                            <strong>#{{ order.order_number }}</strong>
+                            <div class="text-muted small">ID: {{ order.id }}</div>
+                        </td>
+
+                        <td>
+                            <div class="customer-cell">
+                                <strong>{{ order.address.full_name|default:order.user.get_full_name|default:order.user.username }}</strong>
+                                <span class="text-muted small">@{{ order.user.username }} &bull; {{ order.user.email }}</span>
+                            </div>
+                        </td>
+
+                        <td>
+                            <span class="order-date-text">{{ order.created_at|date:"d M Y, h:i A" }}</span>
+                        </td>
+
+                        <td>
+                            <span class="badge-item-count">{{ order.items.count }} item{{ order.items.count|pluralize }}</span>
+                        </td>
+
+                        <td>
+                            <strong class="order-amount-text">₹{{ order.total_amount|floatformat:2 }}</strong>
+                        </td>
+
+                        <td>
+                            <div class="payment-badge-cell">
+                                <span class="badge badge-payment-{{ order.payment_status }}">
+                                    {{ order.get_payment_status_display }}
+                                </span>
+                                <span class="text-muted extra-small">{{ order.get_payment_method_display }}</span>
+                            </div>
+                        </td>
+
+                        <td>
+                            <span class="order-status {{ order.status }}">
+                                {{ order.get_status_display }}
+                            </span>
+                        </td>
+
+                        <td>
+                            <div class="action-btn-group">
+                                <a
+                                    href="{% url 'admin_order_detail' order.id %}"
+                                    class="btn-table-action"
+                                    title="View complete order details & update status"
+                                >
+                                    View Details &rarr;
+                                </a>
+
+                                <a
+                                    href="{% url 'view_invoice' order.id %}"
+                                    class="btn-table-action btn-table-invoice"
+                                    target="_blank"
+                                    title="View Invoice"
+                                >
+                                    Invoice
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% else %}
+        <div class="admin-empty">
+            <div class="admin-empty-icon" style="font-size: 44px; color: var(--slate-light); margin-bottom: 12px;">
+                <i class="fa-solid fa-boxes-stacked"></i>
+            </div>
+            <h3>No orders found.</h3>
+            <p>Try changing your search keywords or clearing the active filters.</p>
+            {% if search or selected_status or selected_payment_status %}
+                <a href="{% url 'admin_orders' %}" class="btn-secondary" style="margin-top: 12px; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-xmark"></i> Clear Active Filters
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

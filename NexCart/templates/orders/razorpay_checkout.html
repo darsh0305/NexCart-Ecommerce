@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Razorpay Payment - NexCart
+{% endblock %}
+
+{% block content %}
+
+<div class="payment-page">
+
+    <div class="payment-card">
+
+        <h1>
+            Complete Your Payment
+        </h1>
+
+        <p>
+            Order Number:
+            <strong>
+                {{ order.order_number }}
+            </strong>
+        </p>
+
+        <h2>
+            ₹{{ amount_in_rupees|floatformat:2 }}
+        </h2>
+
+        <p>
+            Secure payment powered by Razorpay
+        </p>
+
+        <button
+            type="button"
+            id="rzp-button"
+            class="place-order-button"
+        >
+            Pay ₹{{ amount_in_rupees|floatformat:2 }}
+        </button>
+
+        <p class="payment-note">
+            Do not close this page during payment.
+        </p>
+
+    </div>
+
+</div>
+
+<!-- Razorpay Checkout -->
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+
+const options = {
+
+    key: "{{ razorpay_key_id }}",
+
+    amount: "{{ amount }}",
+
+    currency: "{{ currency }}",
+
+    name: "NexCart",
+
+    description:
+        "NexCart Order Payment",
+
+    order_id:
+        "{{ razorpay_order_id }}",
+
+    prefill: {
+
+        name:
+            "{{ user.get_full_name|escapejs }}",
+
+        email:
+            "{{ user.email|escapejs }}"
+
+    },
+
+    theme: {
+
+        color: "#111827"
+
+    },
+
+    handler: function(response) {
+
+        const form =
+            document.createElement("form");
+
+        form.method = "POST";
+
+        form.action =
+            "{% url 'verify_razorpay_payment' %}";
+
+        const csrfToken =
+            "{{ csrf_token }}";
+
+        function addField(
+            name,
+            value
+        ) {
+
+            const input =
+                document.createElement("input");
+
+            input.type = "hidden";
+
+            input.name = name;
+
+            input.value = value;
+
+            form.appendChild(input);
+
+        }
+
+        addField(
+            "csrfmiddlewaretoken",
+            csrfToken
+        );
+
+        addField(
+            "razorpay_payment_id",
+            response.razorpay_payment_id
+        );
+
+        addField(
+            "razorpay_order_id",
+            response.razorpay_order_id
+        );
+
+        addField(
+            "razorpay_signature",
+            response.razorpay_signature
+        );
+
+        document.body.appendChild(form);
+
+        form.submit();
+
+    },
+
+    modal: {
+
+        ondismiss: function() {
+
+            console.log(
+                "Razorpay checkout closed."
+            );
+
+        }
+
+    }
+
+};
+
+const razorpay =
+    new Razorpay(options);
+
+document
+    .getElementById("rzp-button")
+    .onclick = function(event) {
+
+        razorpay.open();
+
+        event.preventDefault();
+
+    };
+
+</script>
+
+{% endblock %}

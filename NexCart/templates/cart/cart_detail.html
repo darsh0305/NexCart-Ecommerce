@@ -1,0 +1,250 @@
+{% extends 'base.html' %}
+
+{% block title %}
+My Cart - NexCart
+{% endblock %}
+
+{% block content %}
+
+<div class="cart-page">
+
+    <h1>
+        <i class="fa-solid fa-cart-shopping"></i> My Shopping Cart
+    </h1>
+
+
+    {% if cart_items %}
+
+        <div class="cart-container">
+
+
+            <!-- Cart Items -->
+
+            <div class="cart-items">
+
+                {% for item in cart_items %}
+
+                    <div class="cart-item">
+
+
+                        <!-- Product Image -->
+
+                        <div class="cart-item-image">
+
+                            {% if item.product.image %}
+
+                                <img
+                                    src="{{ item.product.image.url }}"
+                                    alt="{{ item.product.name }}"
+                                >
+
+                            {% else %}
+
+                                <div class="product-image-placeholder">
+                                    <i class="fa-solid fa-image"></i>
+                                </div>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <!-- Product Information -->
+
+                        <div class="cart-item-info">
+
+                            <h3>
+
+                                <a
+                                    href="{% url 'product_detail' item.product.slug %}"
+                                >
+                                    {{ item.product.name }}
+                                </a>
+
+                            </h3>
+
+                            {% if item.product.category.name == 'Books & Education' and item.product.author %}
+                            <p class="detail-label">
+                                {{ item.product.author }}
+                            </p>
+                            {% elif item.product.brand %}
+                            <p class="detail-label">
+                                {{ item.product.brand }}
+                            </p>
+                            {% endif %}
+
+                            {% if item.size %}
+                            <p class="cart-product-size">
+                                Size: <strong>{{ item.size }}</strong>
+                            </p>
+                            {% endif %}
+
+                            <p class="cart-price">
+
+                                ₹{{ item.product.discounted_price|floatformat:2 }}
+
+                            </p>
+
+
+                            <!-- Quantity -->
+
+                            <div class="quantity-controls">
+
+                                <a
+                                    href="{% url 'decrease_quantity' item.id %}"
+                                    aria-label="Decrease quantity"
+                                >
+                                    <i class="fa-solid fa-minus"></i>
+                                </a>
+
+                                <span>
+                                    {{ item.quantity }}
+                                </span>
+
+                                <a
+                                    href="{% url 'increase_quantity' item.id %}"
+                                    aria-label="Increase quantity"
+                                >
+                                    <i class="fa-solid fa-plus"></i>
+                                </a>
+
+                            </div>
+
+
+                            <!-- Remove -->
+
+                            <a
+                                href="{% url 'remove_from_cart' item.id %}"
+                                class="remove-item"
+                            >
+                                <i class="fa-solid fa-trash-can"></i> Remove
+                            </a>
+
+                        </div>
+
+
+                        <!-- Item Total -->
+
+                        <div class="cart-item-total">
+
+                            ₹{{ item.total_price|floatformat:2 }}
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+
+            <!-- Cart Summary -->
+
+            <div class="cart-summary">
+
+                <h2>
+                    <i class="fa-solid fa-receipt"></i> Order Summary
+                </h2>
+
+
+                <div class="summary-row">
+
+                    <span>
+                        Items
+                    </span>
+
+                    <span>
+                        {{ cart.total_items }}
+                    </span>
+
+                </div>
+
+
+                <div class="summary-row">
+
+                    <span>
+                        Subtotal
+                    </span>
+
+                    <span>
+                        ₹{{ cart.subtotal|floatformat:2 }}
+                    </span>
+
+                </div>
+
+
+                <div class="summary-row">
+
+                    <span>
+                        Delivery
+                    </span>
+
+                    <span>
+                        {% if cart.delivery_charge == 0 %}
+                            <strong class="text-success">FREE</strong>
+                        {% else %}
+                            ₹{{ cart.delivery_charge|floatformat:2 }}
+                        {% endif %}
+                    </span>
+
+                </div>
+
+
+                <hr>
+
+
+                <div class="summary-total">
+
+                    <span>
+                        Total
+                    </span>
+
+                    <strong>
+                        ₹{{ cart.total_with_delivery|floatformat:2 }}
+                    </strong>
+
+                </div>
+
+
+                <a
+                    href="{% url 'checkout' %}"
+                    class="checkout-button"
+                >
+                    <i class="fa-solid fa-lock"></i> Proceed to Checkout
+                </a>
+
+            </div>
+
+        </div>
+
+
+    {% else %}
+
+        <div class="empty-cart">
+
+            <div class="empty-icon" style="font-size: 48px; color: var(--slate-light); margin-bottom: 16px;">
+                <i class="fa-solid fa-cart-shopping"></i>
+            </div>
+
+            <h2>
+                Your cart is empty
+            </h2>
+
+            <p>
+                Add some products to your cart to get started.
+            </p>
+
+            <a
+                href="{% url 'product_list' %}"
+                class="btn"
+            >
+                <i class="fa-solid fa-bag-shopping"></i> Continue Shopping
+            </a>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

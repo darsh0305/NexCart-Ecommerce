@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Delete Product - NexCart Seller
+{% endblock %}
+
+{% block content %}
+<div class="seller-container form-page-container">
+
+    <div class="seller-delete-card">
+        <div class="delete-icon">⚠️</div>
+        <h1>Delete Product</h1>
+        <p class="delete-warning">
+            Are you sure you want to permanently delete <strong>"{{ product.name }}"</strong>?
+        </p>
+        <p class="delete-subtext">
+            This action cannot be undone. This product will be removed from your catalog and store inventory.
+        </p>
+
+        <form method="POST" class="delete-form">
+            {% csrf_token %}
+            <div class="delete-actions">
+                <button type="submit" class="btn-danger">Yes, Delete Product</button>
+                <a href="{% url 'seller_products' %}" class="btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

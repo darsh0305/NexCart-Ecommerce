@@ -1,0 +1,62 @@
+{% load static %}
+<aside class="admin-sidebar" id="adminSidebar">
+    <div class="admin-sidebar-logo">
+        <a href="{% url 'home' %}">
+            <img src="{% static 'images/logo.jpeg' %}" alt="NexCart" class="brand-logo">
+            <span>Nex<span class="logo-accent">Cart</span></span>
+        </a>
+        <span class="admin-sidebar-tag">Admin</span>
+    </div>
+
+    <nav>
+        <a href="{% url 'admin_dashboard' %}" class="{% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+            <span class="sidebar-nav-icon"><i class="fa-solid fa-gauge-high"></i></span>
+            <span>Dashboard</span>
+        </a>
+
+        <a href="/admin/accounts/customuser/">
+            <span class="sidebar-nav-icon"><i class="fa-solid fa-users"></i></span>
+            <span>Users</span>
+        </a>
+
+        <a href="/admin/sellers/sellerprofile/">
+            <span class="sidebar-nav-icon"><i class="fa-solid fa-store"></i></span>
+            <span>Sellers</span>
+        </a>
+
+        <a href="/admin/products/product/">
+            <span class="sidebar-nav-icon"><i class="fa-solid fa-boxes-stacked"></i></span>
+            <span>Products</span>
+        </a>
+
+        <a href="/admin/orders/order/">
+            <span class="sidebar-nav-icon"><i class="fa-solid fa-truck-ramp-box"></i></span>
+            <span>Orders</span>
+        </a>
+
+        <a href="/admin/products/category/">
+            <span class="sidebar-nav-icon"><i class="fa-solid fa-tags"></i></span>
+            <span>Categories</span>
+        </a>
+
+        <div class="sidebar-divider"></div>
+
+        <a href="/admin/" target="_blank" rel="noopener">
+            <span class="sidebar-nav-icon"><i class="fa-solid fa-gear"></i></span>
+            <span>Django Admin Console</span>
+        </a>
+
+        <a href="{% url 'home' %}">
+            <span class="sidebar-nav-icon"><i class="fa-solid fa-shop"></i></span>
+            <span>Storefront View</span>
+        </a>
+
+        <form method="POST" action="{% url 'logout' %}" class="sidebar-logout-form">
+            {% csrf_token %}
+            <button type="submit" class="sidebar-logout-btn">
+                <span class="sidebar-nav-icon"><i class="fa-solid fa-arrow-right-from-bracket"></i></span>
+                <span>Logout</span>
+            </button>
+        </form>
+    </nav>
+</aside>

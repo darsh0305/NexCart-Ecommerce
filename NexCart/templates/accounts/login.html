@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+Login - NexCart
+{% endblock %}
+
+{% block content %}
+
+<div class="auth-container">
+
+    <div class="auth-card">
+
+        <img src="{% static 'images/logo.jpeg' %}" alt="NexCart" class="auth-logo">
+
+        <h1>Welcome Back</h1>
+
+        <p class="auth-subtitle">
+            Login to your NexCart account
+        </p>
+
+        <form method="POST" novalidate>
+
+            {% csrf_token %}
+
+            {% if next %}
+                <input type="hidden" name="next" value="{{ next }}">
+            {% endif %}
+
+
+            {% if form.non_field_errors %}
+                <div class="form-error">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+
+            <!-- Email / Username -->
+
+            <div class="form-group">
+
+                <label for="{{ form.email.id_for_label }}">
+                    Email or Username
+                </label>
+
+                {{ form.email }}
+
+                {% if form.email.errors %}
+                    <div class="form-error">
+                        {{ form.email.errors }}
+                    </div>
+                {% endif %}
+
+            </div>
+
+
+            <!-- Password -->
+
+            <div class="form-group">
+
+                <label for="{{ form.password.id_for_label }}">
+                    Password
+                </label>
+
+                {{ form.password }}
+
+                {% if form.password.errors %}
+                    <div class="form-error">
+                        {{ form.password.errors }}
+                    </div>
+                {% endif %}
+
+            </div>
+
+
+            <!-- Forgot Password -->
+
+            <div class="forgot-password">
+
+                <a href="{% url 'password_reset' %}">
+                    Forgot Password?
+                </a>
+
+            </div>
+
+
+            <!-- Login Button -->
+
+            <button
+                type="submit"
+                class="auth-button"
+            >
+                Login
+            </button>
+
+        </form>
+
+
+        <!-- Register -->
+
+        <p class="auth-footer">
+
+            Don't have an account?
+
+            <a href="{% url 'register' %}">
+                Create Account
+            </a>
+
+        </p>
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,602 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Invoice #{{ invoice_number }} - NexCart{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ============================================================
+   INVOICE PAGE STYLES (ENHANCED READABLE TYPOGRAPHY)
+   ============================================================ */
+
+.invoice-page-bg {
+    background-color: #e2e8f0;
+    min-height: calc(100vh - 120px);
+    padding: 36px 16px 64px 16px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.invoice-container {
+    max-width: 880px;
+    margin: 0 auto;
+}
+
+/* Action Toolbar */
+.invoice-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+    padding: 16px 24px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+    margin-bottom: 24px;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.invoice-toolbar-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0b2a4a;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.invoice-toolbar-buttons {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.btn-inv-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.btn-inv-download {
+    background: #2563eb;
+    color: #ffffff !important;
+}
+
+.btn-inv-download:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
+}
+
+.btn-inv-print {
+    background: #f1f5f9;
+    color: #1e293b !important;
+    border: 1px solid #cbd5e1;
+}
+
+.btn-inv-print:hover {
+    background: #e2e8f0;
+}
+
+.btn-inv-back {
+    background: transparent;
+    color: #475569 !important;
+    border: 1px solid #cbd5e1;
+}
+
+.btn-inv-back:hover {
+    background: #f1f5f9;
+    color: #0f172a !important;
+}
+
+/* ============================================================
+   A4 INVOICE SHEET (PDF MATCH WITH LARGE CRISP FONTS)
+   ============================================================ */
+
+.invoice-sheet {
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+    border-radius: 6px;
+    padding: 44px 44px;
+    color: #0f172a;
+    border: 1px solid #cbd5e1;
+    box-sizing: border-box;
+}
+
+/* 1. Header Section */
+.invoice-pdf-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+}
+
+.brand-block {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.brand-logo-img {
+    width: 52px !important;
+    height: 52px !important;
+    max-width: 52px !important;
+    max-height: 52px !important;
+    border-radius: 8px;
+    object-fit: contain;
+}
+
+.brand-details h1 {
+    font-size: 26px;
+    font-weight: 800;
+    color: #0b2a4a;
+    margin: 0;
+    line-height: 1.1;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.brand-details p {
+    font-size: 12px;
+    color: #5b6b82;
+    margin: 3px 0 0 0;
+    line-height: 1.4;
+}
+
+.meta-block {
+    text-align: right;
+}
+
+.meta-block h2 {
+    font-size: 22px;
+    font-weight: 800;
+    color: #2563eb;
+    margin: 0 0 6px 0;
+    letter-spacing: 0.5px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.meta-line {
+    font-size: 13.5px;
+    color: #0f172a;
+    margin: 3px 0;
+    line-height: 1.4;
+}
+
+.meta-line strong {
+    color: #334155;
+}
+
+/* Blue Divider Line */
+.invoice-pdf-divider {
+    height: 2px;
+    background-color: #2563eb;
+    margin: 18px 0 20px 0;
+    border: none;
+}
+
+/* 2. Three-Column Info Box */
+.invoice-pdf-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    margin-bottom: 24px;
+}
+
+.info-card {
+    padding: 14px 16px;
+    border-right: 1px solid #e2e8f0;
+}
+
+.info-card:last-child {
+    border-right: none;
+}
+
+.info-card-title {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: #0b2a4a;
+    text-transform: uppercase;
+    margin: 0 0 8px 0;
+    letter-spacing: 0.4px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.info-card-text {
+    font-size: 13.5px;
+    color: #334155;
+    margin: 0 0 5px 0;
+    line-height: 1.45;
+}
+
+.info-card-text strong {
+    color: #0f172a;
+}
+
+.status-paid {
+    color: #059669;
+    font-weight: 800;
+}
+
+.status-pending {
+    color: #b45309;
+    font-weight: 800;
+}
+
+/* 3. Items Table */
+.invoice-pdf-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+    font-size: 13.5px;
+}
+
+.invoice-pdf-table thead tr {
+    background-color: #0b2a4a;
+    color: #ffffff;
+}
+
+.invoice-pdf-table th {
+    padding: 10px 10px;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: left;
+    border: 1px solid #0b2a4a;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.invoice-pdf-table th.center,
+.invoice-pdf-table td.center {
+    text-align: center;
+}
+
+.invoice-pdf-table th.right,
+.invoice-pdf-table td.right {
+    text-align: right;
+}
+
+.invoice-pdf-table tbody tr {
+    border: 1px solid #e2e8f0;
+}
+
+.invoice-pdf-table tbody tr:nth-child(even) {
+    background-color: #fbfcfe;
+}
+
+.invoice-pdf-table td {
+    padding: 11px 10px;
+    border: 1px solid #e2e8f0;
+    color: #0f172a;
+    vertical-align: middle;
+    font-size: 13.5px;
+    line-height: 1.4;
+}
+
+.product-name-bold {
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 13.5px;
+}
+
+.discount-val-green {
+    color: #059669;
+    font-weight: 600;
+}
+
+.total-amount-bold {
+    font-weight: 700;
+    color: #0b2a4a;
+}
+
+/* 4. Financial Summary (Right-aligned table) */
+.invoice-pdf-summary-wrap {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 28px;
+}
+
+.invoice-pdf-summary-table {
+    width: 320px;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    border: 1px solid #cbd5e1;
+}
+
+.invoice-pdf-summary-table td {
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.summary-lbl {
+    text-align: right;
+    font-weight: 700;
+    color: #0b2a4a;
+    width: 60%;
+    background: #f8fafc;
+    font-size: 13.5px;
+}
+
+.summary-val {
+    text-align: right;
+    color: #0f172a;
+    font-weight: 600;
+    width: 40%;
+    font-size: 13.5px;
+}
+
+.grand-total-row {
+    background-color: #eff6ff !important;
+}
+
+.grand-total-row .summary-lbl {
+    background-color: #eff6ff !important;
+    color: #0b2a4a;
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.grand-total-row .summary-val {
+    color: #2563eb;
+    font-size: 16px;
+    font-weight: 800;
+}
+
+/* 5. Footer Section */
+.invoice-pdf-footer {
+    border-top: 1px solid #e2e8f0;
+    padding-top: 16px;
+    text-align: center;
+}
+
+.footer-thanks {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: #0b2a4a;
+    margin: 0 0 5px 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.footer-note {
+    font-size: 12px;
+    color: #64748b;
+    margin: 3px 0;
+    line-height: 1.4;
+}
+
+/* ============================================================
+   PRINT STYLES (@media print)
+   ============================================================ */
+
+@media print {
+    body {
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    header, footer, nav, .site-header, .site-footer, .topbar, .navbar, .invoice-toolbar, .messages-container {
+        display: none !important;
+    }
+
+    .invoice-page-bg {
+        background: transparent !important;
+        padding: 0 !important;
+        min-height: auto !important;
+    }
+
+    .invoice-container {
+        max-width: 100% !important;
+        margin: 0 !important;
+        width: 100% !important;
+    }
+
+    .invoice-sheet {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+
+    .invoice-pdf-table thead tr {
+        background-color: #0b2a4a !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .invoice-pdf-info-grid,
+    .grand-total-row,
+    .summary-lbl {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="invoice-page-bg">
+    <div class="invoice-container">
+
+        <!-- Top Action Toolbar -->
+        <div class="invoice-toolbar">
+            <div class="invoice-toolbar-title">
+                <i class="fa-solid fa-file-invoice" style="color: #2563eb;"></i> Tax Invoice #{{ invoice_number }}
+            </div>
+            <div class="invoice-toolbar-buttons">
+                <a href="{% url 'order_detail' order.id %}" class="btn-inv-action btn-inv-back">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Order
+                </a>
+                <button type="button" onclick="window.print()" class="btn-inv-action btn-inv-print">
+                    <i class="fa-solid fa-print"></i> Print Invoice
+                </button>
+                <a href="{% url 'download_invoice' order.id %}" class="btn-inv-action btn-inv-download">
+                    <i class="fa-solid fa-download"></i> Download PDF
+                </a>
+            </div>
+        </div>
+
+        <!-- The Printable Invoice Paper (Matches PDF 1:1) -->
+        <div class="invoice-sheet" id="invoice-sheet">
+
+            <!-- 1. Header Section -->
+            <div class="invoice-pdf-header">
+                <div class="brand-block">
+                    <img src="{% static 'images/logo.jpeg' %}" alt="NexCart Logo" class="brand-logo-img" onerror="this.style.display='none';">
+                    <div class="brand-details">
+                        <h1>NexCart</h1>
+                        <p>Official Retail &amp; Tax Invoice</p>
+                        <p>www.nexcart.com</p>
+                    </div>
+                </div>
+
+                <div class="meta-block">
+                    <h2>TAX INVOICE</h2>
+                    <div class="meta-line"><strong>Invoice No:</strong> {{ invoice_number }}</div>
+                    <div class="meta-line"><strong>Order ID:</strong> {{ order.order_number }}</div>
+                    <div class="meta-line"><strong>Date:</strong> {{ invoice_date_display }}</div>
+                </div>
+            </div>
+
+            <!-- Blue Divider Line -->
+            <hr class="invoice-pdf-divider">
+
+            <!-- 2. Customer, Delivery & Payment 3-Box Grid -->
+            <div class="invoice-pdf-info-grid">
+                <div class="info-card">
+                    <div class="info-card-title">CUSTOMER INFORMATION</div>
+                    <div class="info-card-text"><strong>{{ customer_name }}</strong></div>
+                    <div class="info-card-text">Phone: {{ customer_phone }}</div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card-title">DELIVERY ADDRESS</div>
+                    <div class="info-card-text">{{ address_line }}</div>
+                    {% if city_state_pin %}
+                    <div class="info-card-text">{{ city_state_pin }}</div>
+                    {% endif %}
+                    {% if landmark %}
+                    <div class="info-card-text">{{ landmark }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card-title">PAYMENT INFORMATION</div>
+                    <div class="info-card-text"><strong>Payment Method:</strong> {{ payment_method_display }}</div>
+                    <div class="info-card-text">
+                        <strong>Payment Status:</strong>
+                        {% if order.payment_status == 'paid' %}
+                            <span class="status-paid">PAID</span>
+                        {% else %}
+                            <span class="status-pending">{{ order.get_payment_status_display|upper }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Purchased Items Table -->
+            <table class="invoice-pdf-table">
+                <thead>
+                    <tr>
+                        <th style="width: 32px;">#</th>
+                        <th>Purchased Product</th>
+                        {% if has_fashion %}
+                        <th class="center" style="width: 60px;">Size</th>
+                        {% endif %}
+                        <th class="center" style="width: 48px;">Qty</th>
+                        <th class="right" style="width: 125px;">Original Price</th>
+                        <th class="right" style="width: 125px;">Discount</th>
+                        <th class="right" style="width: 135px;">Total Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items_with_details %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>
+                            <span class="product-name-bold">{{ item.product_name }}</span>
+                        </td>
+                        {% if has_fashion %}
+                        <td class="center">
+                            <strong>{{ item.size|default:"-" }}</strong>
+                        </td>
+                        {% endif %}
+                        <td class="center">{{ item.quantity }}</td>
+                        <td class="right">Rs. {{ item.orig_price|floatformat:2 }}</td>
+                        <td class="right">
+                            {% if item.discount > 0 %}
+                                <span class="discount-val-green">- Rs. {{ item.discount|floatformat:2 }}</span>
+                            {% else %}
+                                <span>Rs. 0.00</span>
+                            {% endif %}
+                        </td>
+                        <td class="right">
+                            <span class="total-amount-bold">Rs. {{ item.total_price|floatformat:2 }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- 4. Financial Summary Table -->
+            <div class="invoice-pdf-summary-wrap">
+                <table class="invoice-pdf-summary-table">
+                    <tbody>
+                        {% if total_savings > 0 %}
+                        <tr>
+                            <td class="summary-lbl">Total MRP (Original):</td>
+                            <td class="summary-val">Rs. {{ total_mrp|floatformat:2 }}</td>
+                        </tr>
+                        <tr>
+                            <td class="summary-lbl">Total Discount Savings:</td>
+                            <td class="summary-val discount-val-green">- Rs. {{ total_savings|floatformat:2 }}</td>
+                        </tr>
+                        <tr>
+                            <td class="summary-lbl">Subtotal (After Discount):</td>
+                            <td class="summary-val">Rs. {{ order.subtotal|floatformat:2 }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td class="summary-lbl">Subtotal:</td>
+                            <td class="summary-val">Rs. {{ order.subtotal|floatformat:2 }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <td class="summary-lbl">Delivery Charges:</td>
+                            <td class="summary-val">
+                                {% if order.delivery_charge == 0 %}
+                                    <span class="discount-val-green" style="font-weight: 700;">FREE</span>
+                                {% else %}
+                                    Rs. {{ order.delivery_charge|floatformat:2 }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr class="grand-total-row">
+                            <td class="summary-lbl">Grand Total:</td>
+                            <td class="summary-val">Rs. {{ order.total_amount|floatformat:2 }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 5. Footer -->
+            <div class="invoice-pdf-footer">
+                <div class="footer-thanks">Thank you for shopping with NexCart!</div>
+                <div class="footer-note">This is a computer-generated invoice and does not require a physical signature.</div>
+                <div class="footer-note">NexCart E-Commerce Platform &bull; Customer Care: support@nexcart.com</div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+{% endblock %}

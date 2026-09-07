@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+{{ title }} - NexCart
+{% endblock %}
+
+{% block content %}
+<div class="container address-form-page">
+
+    <div class="breadcrumbs">
+        <a href="{% url 'home' %}">Home</a> &rsaquo;
+        <a href="{% url 'profile' %}">My Account</a> &rsaquo;
+        <a href="{% url 'address_list' %}">Addresses</a> &rsaquo;
+        <span>{{ title }}</span>
+    </div>
+
+    <div class="form-card address-form-card">
+        <div class="form-card-header">
+            <div class="form-header-icon">📍</div>
+            <div>
+                <h1>{{ title }}</h1>
+                <p>Please enter your complete shipping &amp; contact details below.</p>
+            </div>
+        </div>
+
+        <form method="POST" class="address-form" novalidate>
+            {% csrf_token %}
+            {% if next %}
+                <input type="hidden" name="next" value="{{ next }}">
+            {% endif %}
+
+            {% if form.non_field_errors %}
+                <div class="form-alert form-alert-danger">
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="form-row-2">
+                <div class="form-group {% if form.full_name.errors %}has-error{% endif %}">
+                    <label for="{{ form.full_name.id_for_label }}">Full Name *</label>
+                    {{ form.full_name }}
+                    {% if form.full_name.errors %}
+                        <span class="form-error">{{ form.full_name.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="form-group {% if form.phone.errors %}has-error{% endif %}">
+                    <label for="{{ form.phone.id_for_label }}">Phone Number *</label>
+                    {{ form.phone }}
+                    {% if form.phone.errors %}
+                        <span class="form-error">{{ form.phone.errors.0 }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-row-2">
+                <div class="form-group {% if form.address_type.errors %}has-error{% endif %}">
+                    <label for="{{ form.address_type.id_for_label }}">Address Type *</label>
+                    {{ form.address_type }}
+                    {% if form.address_type.errors %}
+                        <span class="form-error">{{ form.address_type.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="form-group {% if form.landmark.errors %}has-error{% endif %}">
+                    <label for="{{ form.landmark.id_for_label }}">Landmark (Optional)</label>
+                    {{ form.landmark }}
+                    {% if form.landmark.errors %}
+                        <span class="form-error">{{ form.landmark.errors.0 }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-group {% if form.address_line_1.errors %}has-error{% endif %}">
+                <label for="{{ form.address_line_1.id_for_label }}">House / Flat / Building / Street (Line 1) *</label>
+                {{ form.address_line_1 }}
+                {% if form.address_line_1.errors %}
+                    <span class="form-error">{{ form.address_line_1.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div class="form-group {% if form.address_line_2.errors %}has-error{% endif %}">
+                <label for="{{ form.address_line_2.id_for_label }}">Area / Colony / Sector (Line 2)</label>
+                {{ form.address_line_2 }}
+                {% if form.address_line_2.errors %}
+                    <span class="form-error">{{ form.address_line_2.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div class="form-row-3">
+                <div class="form-group {% if form.city.errors %}has-error{% endif %}">
+                    <label for="{{ form.city.id_for_label }}">City *</label>
+                    {{ form.city }}
+                    {% if form.city.errors %}
+                        <span class="form-error">{{ form.city.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="form-group {% if form.state.errors %}has-error{% endif %}">
+                    <label for="{{ form.state.id_for_label }}">State *</label>
+                    {{ form.state }}
+                    {% if form.state.errors %}
+                        <span class="form-error">{{ form.state.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="form-group {% if form.pincode.errors %}has-error{% endif %}">
+                    <label for="{{ form.pincode.id_for_label }}">Pincode *</label>
+                    {{ form.pincode }}
+                    {% if form.pincode.errors %}
+                        <span class="form-error">{{ form.pincode.errors.0 }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-check-group">
+                <label class="checkbox-label" for="{{ form.is_default.id_for_label }}">
+                    {{ form.is_default }}
+                    <span>Set this as my default delivery address</span>
+                </label>
+                {% if form.is_default.errors %}
+                    <span class="form-error">{{ form.is_default.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary btn-save-address">
+                    Save Address
+                </button>
+                <a href="{% if next %}{{ next }}{% else %}{% url 'address_list' %}{% endif %}" class="btn-secondary">
+                    Cancel
+                </a>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+{% endblock %}

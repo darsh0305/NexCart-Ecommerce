@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+Track Order #{{ order.order_number }} - NexCart
+{% endblock %}
+
+{% block content %}
+<div class="container tracking-page-container">
+
+    <!-- =====================================================
+         BREADCRUMBS & HEADER
+    ====================================================== -->
+    <div class="tracking-header">
+        <div class="breadcrumbs">
+            <a href="{% url 'home' %}">Home</a> &rsaquo;
+            <a href="{% url 'my_orders' %}">My Orders</a> &rsaquo;
+            <span>Track Order #{{ order.order_number }}</span>
+        </div>
+
+        <div class="tracking-title-row">
+            <div>
+                <h1><i class="fa-solid fa-truck-fast"></i> Track Your Order</h1>
+                <p class="order-id-subtitle">Order Reference: <strong>#{{ order.order_number }}</strong></p>
+            </div>
+
+            <div class="tracking-header-actions">
+                <a href="{% url 'view_invoice' order.id %}" class="btn-invoice-sm" target="_blank">
+                    <i class="fa-solid fa-file-invoice"></i> Invoice
+                </a>
+                <a href="{% url 'order_detail' order.id %}" class="btn-details-sm">
+                    Order Details <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         ORDER OVERVIEW INFORMATION
+    ====================================================== -->
+    <div class="tracking-order-info">
+        <div class="info-card">
+            <span class="info-label"><i class="fa-regular fa-calendar"></i> Order Date</span>
+            <strong>{{ order.created_at|date:"d M Y, h:i A" }}</strong>
+        </div>
+
+        <div class="info-card">
+            <span class="info-label"><i class="fa-solid fa-truck-ramp-box"></i> Current Status</span>
+            <strong>
+                <span class="status-badge badge-status-{{ order.status }}">
+                    {{ order.get_delivery_status_display }}
+                </span>
+            </strong>
+        </div>
+
+        <div class="info-card">
+            <span class="info-label"><i class="fa-solid fa-credit-card"></i> Payment Status</span>
+            <strong>
+                <span class="status-badge badge-payment-{{ order.payment_status }}">
+                    {{ order.get_payment_status_display }} ({{ order.get_payment_method_display }})
+                </span>
+            </strong>
+        </div>
+
+        <div class="info-card">
+            <span class="info-label"><i class="fa-solid fa-indian-rupee-sign"></i> Total Amount</span>
+            <strong class="text-blue">₹{{ order.total_amount|floatformat:2 }}</strong>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         DELIVERY TIMELINE / TRACKING CARD
+    ====================================================== -->
+    <div class="tracking-card">
+        <div class="tracking-card-header">
+            <h2><i class="fa-solid fa-route"></i> Live Delivery Timeline</h2>
+            <p>Real-time package status and shipment milestones</p>
+        </div>
+
+        {% if is_cancelled %}
+        <!-- CANCELLED STATE -->
+        <div class="order-cancelled">
+            <div class="cancelled-icon"><i class="fa-solid fa-ban"></i></div>
+            <div class="cancelled-content">
+                <h3>Order Cancelled</h3>
+                <p>This order was cancelled on {{ order.updated_at|date:"d M Y, h:i A" }}. If payment was already collected, a full refund will be processed to your original payment method within 3-5 business days.</p>
+            </div>
+        </div>
+        {% else %}
+
+        <!-- TIMELINE STEPS -->
+        <div class="timeline-container">
+            <div class="timeline-progress-track">
+                {% for step in tracking_steps %}
+                    <div class="timeline-step {% if forloop.counter0 < current_index %}completed{% elif forloop.counter0 == current_index %}current{% else %}upcoming{% endif %}">
+                        
+                        <!-- Step Icon Marker -->
+                        <div class="step-marker">
+                            {% if forloop.counter0 < current_index %}
+                                <span class="marker-check"><i class="fa-solid fa-check"></i></span>
+                            {% elif forloop.counter0 == current_index %}
+                                <span class="marker-pulse"></span>
+                                <span class="marker-icon">{{ step.icon }}</span>
+                            {% else %}
+                                <span class="marker-dot"></span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Step Content -->
+                        <div class="step-content">
+                            <div class="step-title-row">
+                                <h3 class="step-title">{{ step.title }}</h3>
+                                {% if forloop.counter0 == current_index %}
+                                    <span class="step-active-tag">Current Stage</span>
+                                {% elif forloop.counter0 < current_index %}
+                                    <span class="step-done-tag">Completed</span>
+                                {% endif %}
+                            </div>
+                            <p class="step-desc">{{ step.desc }}</p>
+                            {% if step.time %}
+                                <span class="step-time"><i class="fa-regular fa-clock"></i> {{ step.time|date:"d M Y, h:i A" }}</span>
+                            {% endif %}
+                        </div>
+
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- =====================================================
+         DELIVERY ADDRESS & PACKAGE CONTENTS
+    ====================================================== -->
+    <div class="tracking-columns-2">
+
+        <!-- Shipping Address Snapshot -->
+        <div class="tracking-subcard">
+            <div class="subcard-header">
+                <h3><i class="fa-solid fa-location-dot"></i> Destination Delivery Address</h3>
+            </div>
+            <div class="subcard-body">
+                <strong class="recipient-name">
+                    {% if order.shipping_name %}
+                        {{ order.shipping_name }}
+                    {% elif order.address %}
+                        {{ order.address.full_name }}
+                    {% else %}
+                        {{ order.user.get_full_name|default:order.user.username }}
+                    {% endif %}
+                </strong>
+                <p class="recipient-phone">
+                    <i class="fa-solid fa-phone"></i> {% if order.shipping_phone %}{{ order.shipping_phone }}{% elif order.address %}{{ order.address.phone }}{% else %}N/A{% endif %}
+                </p>
+                <p class="recipient-address">
+                    {% if order.shipping_address %}
+                        {{ order.shipping_address }}
+                    {% elif order.address %}
+                        {{ order.address.address_line_1 }}{% if order.address.address_line_2 %}, {{ order.address.address_line_2 }}{% endif %}
+                    {% else %}
+                        Standard Delivery Address
+                    {% endif %}
+                </p>
+                <p class="recipient-city">
+                    {% if order.shipping_city %}
+                        {{ order.shipping_city }}, {{ order.shipping_state }} &ndash; <strong>{{ order.shipping_pincode }}</strong>
+                    {% elif order.address %}
+                        {{ order.address.city }}, {{ order.address.state }} &ndash; <strong>{{ order.address.pincode }}</strong>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <!-- Package Items Summary -->
+        <div class="tracking-subcard">
+            <div class="subcard-header">
+                <h3><i class="fa-solid fa-box-open"></i> Package Items ({{ order.items.count }})</h3>
+            </div>
+            <div class="subcard-body items-summary-list">
+                {% for item in order.items.all %}
+                <div class="package-item-row">
+                    <div class="item-img-wrap">
+                        {% if item.product and item.product.image %}
+                            <img src="{{ item.product.image.url }}" alt="{{ item.product_name|default:item.product.name }}">
+                        {% else %}
+                            <div class="item-placeholder">
+                                <i class="fa-solid fa-image"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="item-info">
+                        <strong>{{ item.product_name|default:item.product.name }}</strong>
+                        <span class="text-slate">Qty: {{ item.quantity }} &times; ₹{{ item.price|floatformat:2 }}</span>
+                    </div>
+                    <div class="item-total">
+                        <strong>₹{{ item.total_price|floatformat:2 }}</strong>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- =====================================================
+         FOOTER ACTIONS
+    ====================================================== -->
+    <div class="tracking-footer-actions">
+        <a href="{% url 'my_orders' %}" class="back-orders-button">
+            &larr; Back to My Orders
+        </a>
+    </div>
+
+</div>
+{% endblock %}

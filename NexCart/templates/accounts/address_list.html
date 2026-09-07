@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+My Addresses - NexCart
+{% endblock %}
+
+{% block content %}
+<div class="container address-page">
+
+    <!-- Page Header -->
+    <div class="page-header address-page-header">
+        <div>
+            <div class="breadcrumbs">
+                <a href="{% url 'home' %}">Home</a> &rsaquo;
+                <a href="{% url 'profile' %}">My Account</a> &rsaquo;
+                <span>My Addresses</span>
+            </div>
+            <h1>My Addresses</h1>
+            <p>Manage and organize your delivery addresses for quick and seamless checkout.</p>
+        </div>
+
+        <a href="{% url 'add_address' %}" class="btn-primary btn-add-address">
+            <i class="fa-solid fa-plus"></i> Add New Address
+        </a>
+    </div>
+
+    {% if addresses %}
+    <div class="address-grid">
+        {% for address in addresses %}
+        <div class="address-card {% if address.is_default %}address-card-default{% endif %}">
+            
+            <div class="address-card-header">
+                <div class="address-badges">
+                    <span class="address-type-tag type-{{ address.address_type }}">
+                        {% if address.address_type == 'home' %}
+                            <i class="fa-solid fa-house"></i> Home
+                        {% elif address.address_type == 'work' %}
+                            <i class="fa-solid fa-briefcase"></i> Work
+                        {% else %}
+                            <i class="fa-solid fa-location-dot"></i> Other
+                        {% endif %}
+                    </span>
+
+                    {% if address.is_default %}
+                        <span class="default-badge">
+                            <i class="fa-solid fa-star"></i> Default Address
+                        </span>
+                    {% endif %}
+                </div>
+
+                {% if not address.is_default %}
+                    <form method="POST" action="{% url 'set_default_address' address.id %}" class="set-default-form">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-set-default" title="Set as default delivery address">
+                            Make Default
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+
+            <div class="address-card-body">
+                <h3 class="address-recipient-name">{{ address.full_name }}</h3>
+                <p class="address-phone">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                    </svg>
+                    {{ address.phone }}
+                </p>
+
+                <div class="address-text-lines">
+                    <p class="address-street">{{ address.address_line_1 }}</p>
+                    {% if address.address_line_2 %}
+                        <p class="address-street">{{ address.address_line_2 }}</p>
+                    {% endif %}
+                    {% if address.landmark %}
+                        <p class="address-landmark">
+                            <span class="landmark-label">Landmark:</span> {{ address.landmark }}
+                        </p>
+                    {% endif %}
+                    <p class="address-city-state">
+                        <strong>{{ address.city }}</strong>, {{ address.state }} &ndash; <strong>{{ address.pincode }}</strong>
+                    </p>
+                </div>
+            </div>
+
+            <div class="address-card-actions">
+                <a href="{% url 'edit_address' address.id %}" class="btn-address-edit">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    Edit
+                </a>
+
+                <form method="POST" action="{% url 'delete_address' address.id %}" onsubmit="return confirm('Are you sure you want to delete this address?');" class="delete-address-form">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-address-delete">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                        Delete
+                    </button>
+                </form>
+            </div>
+
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state-card address-empty-card">
+        <div class="empty-icon" style="font-size: 48px; color: var(--slate-light); margin-bottom: 16px;">
+            <i class="fa-solid fa-location-dot"></i>
+        </div>
+        <h2>No Delivery Addresses Saved Yet</h2>
+        <p>Save your home, office, and other addresses for a faster, one-click checkout experience.</p>
+        <a href="{% url 'add_address' %}" class="btn-primary">
+            <i class="fa-solid fa-plus"></i> Add Your First Address
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
