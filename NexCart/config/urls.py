@@ -64,6 +64,11 @@ urlpatterns = [
         'seller/',
         include('sellers.urls')
     ),
+
+    path(
+        'chatbot/',
+        include('chatbot.urls')
+    ),
 ]
 
 

@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'payments',
     'dashboard',
     'sellers',
+    'chatbot',
 ]
 
 MIDDLEWARE = [
@@ -150,6 +151,8 @@ AUTHENTICATION_BACKENDS = [
 EMAIL_BACKEND = (
     'django.core.mail.backends.console.EmailBackend'
 )
+
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
 DEFAULT_FROM_EMAIL = (
     'NexCart <noreply@nexcart.com>'

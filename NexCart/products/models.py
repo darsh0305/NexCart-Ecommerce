@@ -247,6 +247,50 @@ class Product(models.Model):
         return self.name
 
 
+class ProductFeedback(models.Model):
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='feedbacks'
+    )
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='product_feedbacks'
+    )
+
+    order_item = models.OneToOneField(
+        'orders.OrderItem',
+        on_delete=models.CASCADE,
+        related_name='feedback'
+    )
+
+    rating = models.PositiveSmallIntegerField()
+
+    comment = models.TextField(
+        blank=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['product', 'user'],
+                name='unique_product_feedback_per_user'
+            )
+        ]
+
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.product.name} feedback by {self.user.username}'
+
+
 class ProductSizeVariant(models.Model):
 
     product = models.ForeignKey(

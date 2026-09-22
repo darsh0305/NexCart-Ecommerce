@@ -430,6 +430,43 @@
 
 </div>
 
+<section class="product-feedback-section" aria-labelledby="feedback-title">
+    <div class="product-feedback-header">
+        <div>
+            <p class="section-eyebrow">Customer feedback</p>
+            <h2 id="feedback-title">What shoppers say</h2>
+        </div>
+        {% if feedback_total %}
+            <div class="feedback-summary">
+                <strong>{{ feedback_average|floatformat:1 }}</strong>
+                <span class="feedback-stars" aria-label="{{ feedback_average|floatformat:1 }} out of 5 stars">
+                    {% for star in '12345' %}<i class="fa-solid fa-star"></i>{% endfor %}
+                </span>
+                <small>{{ feedback_total }} review{{ feedback_total|pluralize }}</small>
+            </div>
+        {% else %}
+            <span class="feedback-empty-label">Be the first to share feedback</span>
+        {% endif %}
+    </div>
+
+    {% if feedbacks %}
+        <div class="feedback-list">
+            {% for feedback in feedbacks %}
+                <article class="feedback-item">
+                    <div class="feedback-item-top">
+                        <strong>{{ feedback.user.get_full_name|default:feedback.user.username }}</strong>
+                        <span class="feedback-item-date">{{ feedback.created_at|date:"d M Y" }}</span>
+                    </div>
+                    <div class="feedback-stars" aria-label="{{ feedback.rating }} out of 5 stars">
+                        {% for star in '12345' %}<i class="fa-solid fa-star {% if forloop.counter > feedback.rating %}muted{% endif %}"></i>{% endfor %}
+                    </div>
+                    {% if feedback.comment %}<p>{{ feedback.comment }}</p>{% endif %}
+                </article>
+            {% endfor %}
+        </div>
+    {% endif %}
+</section>
+
 <!-- Lightbox Modal (enhanced) -->
 
 <div id="imageLightbox" class="image-lightbox" style="display:none;">

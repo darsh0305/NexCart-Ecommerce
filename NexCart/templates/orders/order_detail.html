@@ -233,6 +233,28 @@ Order #{{ order.order_number }} - NexCart
                                             </a>
                                         </div>
                                     {% endif %}
+
+                                    {% if order.status == 'delivered' and item.product and item.product.id not in reviewed_product_ids %}
+                                        <form method="post" action="{% url 'submit_product_feedback' item.id %}" class="feedback-form">
+                                            {% csrf_token %}
+                                            <div class="feedback-form-heading">
+                                                <span><i class="fa-regular fa-star"></i> How was this product?</span>
+                                                <span class="feedback-form-note">Your feedback helps other shoppers.</span>
+                                            </div>
+                                            <div class="feedback-form-fields">
+                                                <div class="feedback-rating-input" role="radiogroup" aria-label="Product rating">
+                                                    {% for rating in '54321' %}
+                                                        <input type="radio" id="rating-{{ item.id }}-{{ rating }}" name="rating" value="{{ rating }}" required>
+                                                        <label for="rating-{{ item.id }}-{{ rating }}" title="{{ rating }} out of 5 stars"><i class="fa-solid fa-star"></i></label>
+                                                    {% endfor %}
+                                                </div>
+                                                <input type="text" name="comment" class="feedback-comment-input" maxlength="500" placeholder="Add a short comment (optional)">
+                                                <button type="submit" class="btn-primary feedback-submit-btn"><i class="fa-solid fa-paper-plane"></i> Share Feedback</button>
+                                            </div>
+                                        </form>
+                                    {% elif order.status == 'delivered' and item.product and item.product.id in reviewed_product_ids %}
+                                        <div class="feedback-submitted"><i class="fa-solid fa-circle-check"></i> Feedback shared</div>
+                                    {% endif %}
                                 </div>
                             </div>
 

@@ -29,6 +29,7 @@ from reportlab.platypus import (
 
 from cart.models import Cart, CartItem
 from accounts.models import Address
+from products.models import ProductFeedback
 from .models import Order, OrderItem
 
 # ============================================================
@@ -890,6 +891,12 @@ def order_detail(
     )
 
     can_cancel = order.status in ['pending', 'confirmed', 'processing']
+    reviewed_product_ids = set(
+        ProductFeedback.objects.filter(
+            user=request.user,
+            product__in=order.items.values('product_id')
+        ).values_list('product_id', flat=True)
+    )
 
     return render(
         request,
@@ -897,6 +904,7 @@ def order_detail(
         {
             'order': order,
             'can_cancel': can_cancel,
+            'reviewed_product_ids': reviewed_product_ids,
         }
     )
 

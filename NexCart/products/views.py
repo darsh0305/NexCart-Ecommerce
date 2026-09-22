@@ -3,6 +3,8 @@ from datetime import timedelta
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import JsonResponse
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import (
     get_object_or_404,
     render,
@@ -12,7 +14,9 @@ from django.utils import timezone
 from .models import (
     Category,
     Product,
+    ProductFeedback,
 )
+from orders.models import OrderItem
 
 
 def home(request):
@@ -401,6 +405,10 @@ def product_detail(
     size_stock_map = {v.size: v.stock for v in product.size_variants.all()}
     has_variants = product.size_variants.exists()
 
+    feedbacks = product.feedbacks.select_related('user')
+    feedback_total = feedbacks.count()
+    feedback_average = sum(feedback.rating for feedback in feedbacks) / feedback_total if feedback_total else 0
+
     context = {
         'product': product,
         'gallery_images': gallery_images,
@@ -414,6 +422,9 @@ def product_detail(
         'initial_pincode': initial_pincode if user_address else '',
         'size_stock_map': size_stock_map,
         'has_variants': has_variants,
+        'feedbacks': feedbacks,
+        'feedback_total': feedback_total,
+        'feedback_average': feedback_average,
     }
 
     return render(
@@ -421,3 +432,43 @@ def product_detail(
         'products/product_detail.html',
         context
     )
+
+
+@login_required
+def submit_product_feedback(request, order_item_id):
+    if request.method != 'POST':
+        return redirect('my_orders')
+
+    order_item = get_object_or_404(
+        OrderItem.objects.select_related('order', 'product'),
+        id=order_item_id,
+        order__user=request.user,
+        order__status='delivered'
+    )
+
+    if ProductFeedback.objects.filter(
+        product=order_item.product,
+        user=request.user
+    ).exists():
+        messages.info(request, 'You have already shared feedback for this product.')
+        return redirect('order_detail', order_id=order_item.order_id)
+
+    try:
+        rating = int(request.POST.get('rating', ''))
+    except (TypeError, ValueError):
+        rating = 0
+
+    comment = request.POST.get('comment', '').strip()
+    if rating not in range(1, 6):
+        messages.error(request, 'Please choose a rating from 1 to 5 stars.')
+        return redirect('order_detail', order_id=order_item.order_id)
+
+    ProductFeedback.objects.create(
+        product=order_item.product,
+        user=request.user,
+        order_item=order_item,
+        rating=rating,
+        comment=comment,
+    )
+    messages.success(request, 'Thanks for sharing your feedback.')
+    return redirect('order_detail', order_id=order_item.order_id)

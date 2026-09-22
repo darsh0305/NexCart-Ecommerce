@@ -20,6 +20,7 @@
 
     <!-- Main CSS -->
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/chatbot.css' %}">
 
     {% block extra_head %}
     {% endblock %}
@@ -50,8 +51,11 @@
     <!-- Footer -->
     {% include 'includes/footer.html' %}
 
+    {% include 'chatbot/chatbot.html' %}
+
     <!-- Main JavaScript -->
     <script src="{% static 'js/main.js' %}"></script>
+    <script src="{% static 'js/chatbot.js' %}"></script>
 
     {% block extra_js %}
     {% endblock %}

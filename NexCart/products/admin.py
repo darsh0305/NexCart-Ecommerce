@@ -5,6 +5,7 @@ from .models import (
     Product,
     ProductImage,
     ProductSizeVariant,
+    ProductFeedback,
 )
 
 
@@ -128,3 +129,31 @@ class ProductAdmin(admin.ModelAdmin):
 
     low_stock.boolean = True
     low_stock.short_description = 'Low Stock'
+
+
+@admin.register(ProductFeedback)
+class ProductFeedbackAdmin(admin.ModelAdmin):
+
+    list_display = (
+        'product',
+        'user',
+        'rating',
+        'order_item',
+        'created_at',
+    )
+
+    list_filter = (
+        'rating',
+        'created_at',
+    )
+
+    search_fields = (
+        'product__name',
+        'user__username',
+        'user__email',
+        'comment',
+    )
+
+    readonly_fields = (
+        'created_at',
+    )

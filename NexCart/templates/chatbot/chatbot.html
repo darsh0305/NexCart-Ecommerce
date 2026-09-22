@@ -1,0 +1,117 @@
+{% load static %}
+
+<div class="nexcart-chatbot" id="nexcart-chatbot">
+
+    <!-- ==============================
+         FLOATING TOGGLE BUTTON
+    =============================== -->
+    <button id="chatbot-toggle" class="chatbot-toggle" type="button" aria-label="Open NexCart AI chat">
+        <span class="chatbot-toggle-icon" id="chatbot-toggle-icon">
+            <i class="fa-solid fa-headset"></i>
+        </span>
+        <span class="chatbot-toggle-close" id="chatbot-toggle-close">
+            <i class="fa-solid fa-xmark"></i>
+        </span>
+        <span class="chatbot-toggle-pulse"></span>
+    </button>
+
+    <!-- ==============================
+         CHAT WINDOW
+    =============================== -->
+    <div id="chatbot-window" class="chatbot-window" role="dialog" aria-label="NexCart Chatbot" aria-live="polite">
+
+        <!-- Header -->
+        <div class="chatbot-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <button id="chatbot-back" type="button" class="chatbot-header-btn" aria-label="Back">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <div class="chatbot-brand">
+                    <div class="chatbot-avatar">
+                        <img src="{% static 'images/logo.jpeg' %}" alt="NexCart" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                        <span class="chatbot-status-dot"></span>
+                    </div>
+                    <div class="chatbot-brand-info">
+                        <strong>NexCart Chatbot</strong>
+                        <span class="chatbot-status-text" id="chatbot-status-text">Online &bull; Ready to help</span>
+                    </div>
+                </div>
+            </div>
+            <div class="chatbot-header-actions">
+                <button id="chatbot-clear" type="button" class="chatbot-header-btn" aria-label="Clear chat" title="Clear conversation">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+                <button id="chatbot-close" type="button" class="chatbot-header-btn" aria-label="Close chat" title="Close chat">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Messages Area -->
+        <div id="chatbot-messages" class="chatbot-messages">
+
+            <!-- Welcome Card -->
+            <div class="chatbot-welcome" id="chatbot-welcome">
+                <div class="chatbot-welcome-icon">
+                    <i class="fa-solid fa-sparkles"></i>
+                </div>
+                <h3>Welcome to NexCart Chatbot</h3>
+                <p>Your smart shopping assistant. I can help you find products, compare prices, track orders, and more.</p>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="chatbot-quick-actions" id="chatbot-quick-actions">
+                <button class="chatbot-chip" data-message="What are the trending products?">
+                    <i class="fa-solid fa-fire"></i> Trending products
+                </button>
+                <button class="chatbot-chip" data-message="Show me the best deals today">
+                    <i class="fa-solid fa-tags"></i> Best deals
+                </button>
+                <button class="chatbot-chip" data-message="How do I track my order?">
+                    <i class="fa-solid fa-truck"></i> Track order
+                </button>
+                <button class="chatbot-chip" data-message="What categories do you have?">
+                    <i class="fa-solid fa-layer-group"></i> Categories
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Typing indicator (hidden by default) -->
+        <div class="chatbot-typing" id="chatbot-typing">
+            <div class="chatbot-typing-avatar">
+                <i class="fa-solid fa-robot"></i>
+            </div>
+            <div class="chatbot-typing-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="chatbot-input-area">
+            <div class="chatbot-input-wrap">
+                <input
+                    id="chatbot-input"
+                    type="text"
+                    placeholder="Ask NexCart Chatbot anything..."
+                    maxlength="2000"
+                    autocomplete="off"
+                    aria-label="Type your message"
+                >
+                <span class="chatbot-char-count" id="chatbot-char-count">0 / 2000</span>
+            </div>
+            <button id="chatbot-send" type="button" aria-label="Send message">
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </div>
+
+        <!-- Footer Branding -->
+        <div class="chatbot-footer">
+            <span>Powered by <strong>NexCart Chatbot</strong></span>
+        </div>
+
+    </div>
+
+</div>
