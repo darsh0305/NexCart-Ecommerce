@@ -11,7 +11,7 @@ A modern Django-based e-commerce marketplace for online shopping, product discov
 
 ## Overview
 
-NexCart is a full-stack online shopping project built with Django. It includes a storefront, product categories, shopping cart, checkout flow, order tracking, seller dashboard, and payment integration with Razorpay.
+NexCart is a full-stack online shopping project built with Django. It includes a storefront, product categories, shopping cart, checkout flow, order tracking, seller dashboard, product reviews, an AI shopping assistant, and payment integration with Razorpay.
 
 ## Features
 
@@ -21,7 +21,9 @@ NexCart is a full-stack online shopping project built with Django. It includes a
 - Shopping cart and checkout flow
 - Razorpay payment integration
 - Order history and order detail pages
+- Product ratings and feedback for completed order items
 - Seller dashboard and order management
+- Gemini-powered chatbot with live NexCart context
 - Admin-friendly Django structure
 - Email verification and account authentication flow
 - Responsive storefront UI
@@ -32,6 +34,7 @@ NexCart is a full-stack online shopping project built with Django. It includes a
 - Django 6.0.7
 - SQLite database
 - Razorpay API
+- Google Gemini API
 - HTML, CSS, JavaScript
 - Bootstrap-inspired custom templates
 
@@ -41,6 +44,7 @@ NexCart is a full-stack online shopping project built with Django. It includes a
 NexCart/
 ├── accounts/
 ├── cart/
+├── chatbot/
 ├── config/
 ├── dashboard/
 ├── media/
@@ -66,7 +70,7 @@ NexCart/
 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/NexCart.git
+git clone https://github.com/darsh0305/NexCart-Ecommerce.git
 cd NexCart
 ```
 
@@ -132,7 +136,10 @@ DEBUG=True
 ALLOWED_HOSTS=127.0.0.1,localhost
 RAZORPAY_KEY_ID=your_razorpay_key_id
 RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+GEMINI_API_KEY=your_gemini_api_key
 ```
+
+`GEMINI_API_KEY` enables the NexCart AI shopping assistant. Razorpay credentials are required for online payments; the application can still be run locally without configuring the optional integrations.
 
 ## Screenshots
 
@@ -144,7 +151,7 @@ Add your project screenshots here for a more polished GitHub profile and reposit
 - Add vendor onboarding flow
 - Add analytics dashboard
 - Improve mobile responsiveness
-- Add tests for more payment workflows
+- Expand automated coverage for payment and chatbot workflows
 
 ## Contributing
 
