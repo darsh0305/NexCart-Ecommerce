@@ -27,6 +27,13 @@ document.addEventListener('DOMContentLoaded', function () {
     let isSending = false;
     let isApiAvailable = true;
 
+    // ── Greeting Detection ──
+    const GREETING_RE = /^(hi+|hello+|hey+|hy+|hyy+|hiya|heya|howdy|greetings|sup|what'?s up)[!.\s]*$/i;
+
+    function isGreeting(msg) {
+        return GREETING_RE.test((msg || '').trim());
+    }
+
     // ── Helpers ──
 
     function getCookie(name) {
@@ -255,6 +262,24 @@ document.addEventListener('DOMContentLoaded', function () {
             if (response.ok && data.success) {
                 setAvailableState();
                 addMessage(data.response, 'bot');
+                // After a greeting, append a fresh copy of the suggestion chips at the bottom
+                if (isGreeting(message) && quickActEl) {
+                    const chipsClone = quickActEl.cloneNode(true);
+                    chipsClone.removeAttribute('id');
+                    chipsClone.style.display = 'flex';  // force visible (original may be display:none)
+                    chipsClone.style.flexWrap = 'wrap';
+                    chipsClone.style.gap = '8px';
+                    chipsClone.style.padding = '4px 0 8px';
+                    chipsClone.addEventListener('click', function (e) {
+                        const chip = e.target.closest('.chatbot-chip');
+                        if (chip) {
+                            const msg = chip.getAttribute('data-message');
+                            if (msg) { inputEl.value = msg; sendMessage(); }
+                        }
+                    });
+                    messagesEl.appendChild(chipsClone);
+                    scrollToBottom();
+                }
             } else {
                 if (response.status === 503) {
                     setUnavailableState();

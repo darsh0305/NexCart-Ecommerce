@@ -4,7 +4,7 @@ import logging
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET, require_POST
 
-from .context_builder import build_nexcart_context
+from .context_builder import build_nexcart_context, build_seller_context
 from .gemini_service import GeminiUnavailableError, api_available, get_gemini_response
 
 logger = logging.getLogger(__name__)
@@ -53,6 +53,7 @@ def chat(request):
         response = get_gemini_response(
             message,
             nexcart_context,
+            mode='customer',
         )
 
         return JsonResponse({
@@ -77,6 +78,81 @@ def chat(request):
     except Exception as error:
         # Unexpected server errors
         logger.exception('NexCart AI Error: %s', error)
+        return JsonResponse({
+            'success': False,
+            'error': 'NexCart AI encountered an unexpected error.',
+        }, status=500)
+
+
+@require_POST
+def seller_chat(request):
+    """
+    Seller-only chatbot endpoint.
+    Provides AI assistance for revenue, sales, inventory, and orders.
+    Only accessible to authenticated sellers.
+    """
+    # Must be logged in and be a seller
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'success': False,
+            'error': 'Authentication required.',
+        }, status=401)
+
+    if request.user.role != 'seller' and not hasattr(request.user, 'seller_profile'):
+        return JsonResponse({
+            'success': False,
+            'error': 'Seller access required.',
+        }, status=403)
+
+    try:
+        data = json.loads(request.body)
+        message = (data.get('message') or '').strip()
+
+        if not message:
+            return JsonResponse({
+                'success': False,
+                'error': 'Please enter a message.'
+            }, status=400)
+
+        if len(message) > 2000:
+            return JsonResponse({
+                'success': False,
+                'error': 'Message is too long.'
+            }, status=400)
+
+        # Build live seller context from the database
+        seller_context = build_seller_context(
+            request.user,
+            message,
+        )
+
+        # Ask Gemini in seller mode
+        response = get_gemini_response(
+            message,
+            seller_context,
+            mode='seller',
+        )
+
+        return JsonResponse({
+            'success': True,
+            'response': response,
+        })
+
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid request.'
+        }, status=400)
+
+    except GeminiUnavailableError as error:
+        logger.warning('NexCart Seller AI Unavailable: %s', error)
+        return JsonResponse({
+            'success': False,
+            'error': 'NexCart AI is temporarily unavailable.',
+        }, status=503)
+
+    except Exception as error:
+        logger.exception('NexCart Seller AI Error: %s', error)
         return JsonResponse({
             'success': False,
             'error': 'NexCart AI encountered an unexpected error.',

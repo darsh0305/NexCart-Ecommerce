@@ -14,6 +14,7 @@
     <!-- Font Awesome 6 Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/chatbot.css' %}">
     {% block extra_head %}{% endblock %}
 </head>
 <body class="seller-body">
@@ -73,6 +74,9 @@
 
     <!-- Footer (Same as customer side) -->
     {% include 'includes/footer.html' %}
+
+    <!-- NexCart Seller AI Chatbot -->
+    {% include 'chatbot/seller_chatbot.html' %}
 
     <!-- Scripts -->
     <script src="{% static 'js/main.js' %}"></script>

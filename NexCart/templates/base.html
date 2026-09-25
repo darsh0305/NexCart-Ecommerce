@@ -51,11 +51,15 @@
     <!-- Footer -->
     {% include 'includes/footer.html' %}
 
-    {% include 'chatbot/chatbot.html' %}
+    {% if request.user.is_authenticated and request.user.role == 'seller' %}
+        {% include 'chatbot/seller_chatbot.html' %}
+    {% else %}
+        {% include 'chatbot/chatbot.html' %}
+        <script src="{% static 'js/chatbot.js' %}?v=3"></script>
+    {% endif %}
 
     <!-- Main JavaScript -->
     <script src="{% static 'js/main.js' %}"></script>
-    <script src="{% static 'js/chatbot.js' %}"></script>
 
     {% block extra_js %}
     {% endblock %}

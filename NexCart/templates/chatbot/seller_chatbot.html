@@ -1,0 +1,371 @@
+{% load static %}
+
+<div class="nexcart-chatbot" id="nexcart-chatbot">
+
+    <!-- ==============================
+         FLOATING TOGGLE BUTTON
+    =============================== -->
+    <button id="chatbot-toggle" class="chatbot-toggle" type="button" aria-label="Open NexCart Seller AI">
+        <span class="chatbot-toggle-icon" id="chatbot-toggle-icon">
+            <i class="fa-solid fa-robot"></i>
+        </span>
+        <span class="chatbot-toggle-close" id="chatbot-toggle-close">
+            <i class="fa-solid fa-xmark"></i>
+        </span>
+        <span class="chatbot-toggle-pulse"></span>
+    </button>
+
+    <!-- ==============================
+         CHAT WINDOW
+    =============================== -->
+    <div id="chatbot-window" class="chatbot-window" role="dialog" aria-label="NexCart Seller AI" aria-live="polite">
+
+        <!-- Header -->
+        <div class="chatbot-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <button id="chatbot-back" type="button" class="chatbot-header-btn" aria-label="Back">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <div class="chatbot-brand">
+                    <div class="chatbot-avatar">
+                        <img src="{% static 'images/logo.jpeg' %}" alt="NexCart" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                        <span class="chatbot-status-dot"></span>
+                    </div>
+                    <div class="chatbot-brand-info">
+                        <strong>NexCart Seller AI</strong>
+                        <span class="chatbot-status-text" id="chatbot-status-text">Online &bull; Seller Assistant</span>
+                    </div>
+                </div>
+            </div>
+            <div class="chatbot-header-actions">
+                <button id="chatbot-clear" type="button" class="chatbot-header-btn" aria-label="Clear chat" title="Clear conversation">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+                <button id="chatbot-close" type="button" class="chatbot-header-btn" aria-label="Close chat" title="Close chat">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Messages Area -->
+        <div id="chatbot-messages" class="chatbot-messages">
+
+            <!-- Welcome Card -->
+            <div class="chatbot-welcome" id="chatbot-welcome">
+                <div class="chatbot-welcome-icon">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <h3>NexCart Seller AI</h3>
+                <p>Your personal store assistant. Ask me about your revenue, orders, inventory, and top-selling products.</p>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="chatbot-quick-actions" id="chatbot-quick-actions">
+                <button class="chatbot-chip" data-message="What is my total revenue?">
+                    <i class="fa-solid fa-indian-rupee-sign"></i> Total revenue
+                </button>
+                <button class="chatbot-chip" data-message="Show me my recent orders">
+                    <i class="fa-solid fa-boxes-stacked"></i> Recent orders
+                </button>
+                <button class="chatbot-chip" data-message="Which products are low on stock?">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Low stock
+                </button>
+                <button class="chatbot-chip" data-message="What are my top selling products?">
+                    <i class="fa-solid fa-trophy"></i> Top products
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Typing indicator (hidden by default) -->
+        <div class="chatbot-typing" id="chatbot-typing">
+            <div class="chatbot-typing-avatar">
+                <i class="fa-solid fa-robot"></i>
+            </div>
+            <div class="chatbot-typing-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="chatbot-input-area">
+            <div class="chatbot-input-wrap">
+                <input
+                    id="chatbot-input"
+                    type="text"
+                    placeholder="Ask about your store, revenue, orders..."
+                    maxlength="2000"
+                    autocomplete="off"
+                    aria-label="Type your message"
+                >
+                <span class="chatbot-char-count" id="chatbot-char-count">0 / 2000</span>
+            </div>
+            <button id="chatbot-send" type="button" aria-label="Send message">
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </div>
+
+        <!-- Footer Branding -->
+        <div class="chatbot-footer">
+            <span>Powered by <strong>NexCart Seller AI</strong></span>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    document.addEventListener('DOMContentLoaded', function () {
+
+        var toggleBtn  = document.getElementById('chatbot-toggle');
+        var closeBtn   = document.getElementById('chatbot-close');
+        var backBtn    = document.getElementById('chatbot-back');
+        var clearBtn   = document.getElementById('chatbot-clear');
+        var chatWindow = document.getElementById('chatbot-window');
+        var messagesEl = document.getElementById('chatbot-messages');
+        var inputEl    = document.getElementById('chatbot-input');
+        var sendBtn    = document.getElementById('chatbot-send');
+        var typingEl   = document.getElementById('chatbot-typing');
+        var statusText = document.getElementById('chatbot-status-text');
+        var charCount  = document.getElementById('chatbot-char-count');
+        var welcomeEl  = document.getElementById('chatbot-welcome');
+        var quickActEl = document.getElementById('chatbot-quick-actions');
+        var statusDot  = document.querySelector('.chatbot-status-dot');
+
+        if (!toggleBtn || !chatWindow || !messagesEl || !inputEl || !sendBtn) return;
+
+        var isSending = false;
+        var isApiAvailable = true;
+
+        // ── Greeting Detection ──
+        var GREETING_RE = /^(hi+|hello+|hey+|hy+|hyy+|hiya|heya|howdy|greetings|sup|what'?s up)[!.\s]*$/i;
+        function isGreeting(msg) {
+            return GREETING_RE.test((msg || '').trim());
+        }
+
+        function getCookie(name) {
+            var value = null;
+            if (document.cookie && document.cookie !== '') {
+                document.cookie.split(';').forEach(function (part) {
+                    part = part.trim();
+                    if (part.startsWith(name + '=')) {
+                        value = decodeURIComponent(part.substring(name.length + 1));
+                    }
+                });
+            }
+            return value;
+        }
+
+        function scrollToBottom() {
+            requestAnimationFrame(function () {
+                messagesEl.scrollTop = messagesEl.scrollHeight;
+            });
+        }
+
+        function formatTime() {
+            return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function setUnavailableState() {
+            isApiAvailable = false;
+            if (statusText) statusText.textContent = 'AI temporarily unavailable';
+            if (statusDot) {
+                statusDot.style.background = '#EF4444';
+                statusDot.style.boxShadow = '0 0 8px rgba(239,68,68,0.6)';
+                statusDot.style.animation = 'none';
+            }
+            inputEl.placeholder = 'Seller AI is currently unavailable...';
+        }
+
+        function setAvailableState() {
+            isApiAvailable = true;
+            if (statusText) statusText.textContent = 'Online \u2022 Seller Assistant';
+            if (statusDot) {
+                statusDot.style.background = '#34D399';
+                statusDot.style.boxShadow = '0 0 8px rgba(52,211,153,0.6)';
+                statusDot.style.animation = 'chatbot-dot-glow 2s ease-in-out infinite alternate';
+            }
+            inputEl.placeholder = 'Ask about your store, revenue, orders...';
+        }
+
+        function checkHealth() {
+            fetch('/chatbot/health/')
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    if (data.status === 'ok') { setAvailableState(); }
+                    else { setUnavailableState(); }
+                })
+                .catch(function () { setUnavailableState(); });
+        }
+
+        checkHealth();
+
+        toggleBtn.addEventListener('click', function () {
+            var isOpen = chatWindow.classList.toggle('active');
+            toggleBtn.classList.toggle('is-open', isOpen);
+            if (isOpen) { inputEl.focus(); scrollToBottom(); checkHealth(); }
+        });
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function () {
+                chatWindow.classList.remove('active');
+                toggleBtn.classList.remove('is-open');
+            });
+        }
+
+        function resetToWelcome() {
+            messagesEl.querySelectorAll('.chat-message').forEach(function (el) { el.remove(); });
+            if (welcomeEl)  welcomeEl.style.display = '';
+            if (quickActEl) quickActEl.style.display = '';
+            if (isApiAvailable) setAvailableState();
+        }
+
+        if (backBtn)  backBtn.addEventListener('click', resetToWelcome);
+        if (clearBtn) clearBtn.addEventListener('click', resetToWelcome);
+
+        if (charCount) {
+            inputEl.addEventListener('input', function () {
+                charCount.textContent = inputEl.value.length + ' / 2000';
+            });
+        }
+
+        if (quickActEl) {
+            quickActEl.addEventListener('click', function (e) {
+                var chip = e.target.closest('.chatbot-chip');
+                if (chip) {
+                    var msg = chip.getAttribute('data-message');
+                    if (msg) { inputEl.value = msg; sendMessage(); }
+                }
+            });
+        }
+
+        function addMessage(text, type) {
+            if (welcomeEl)  welcomeEl.style.display = 'none';
+            if (quickActEl) quickActEl.style.display = 'none';
+
+            var wrapper = document.createElement('div');
+            wrapper.className = 'chat-message ' + (type === 'user' ? 'user-message' : 'bot-message');
+            if (type === 'error') wrapper.className = 'chat-message bot-message error-message';
+
+            var content = document.createElement('div');
+            content.className = 'message-content';
+            content.textContent = text;
+
+            var time = document.createElement('span');
+            time.className = 'message-time';
+            time.textContent = formatTime();
+            content.appendChild(time);
+
+            wrapper.appendChild(content);
+            messagesEl.appendChild(wrapper);
+            scrollToBottom();
+        }
+
+        function showTyping() {
+            if (typingEl) { typingEl.classList.add('active'); scrollToBottom(); }
+            if (statusText) statusText.textContent = 'Analysing\u2026';
+        }
+
+        function hideTyping() {
+            if (typingEl) typingEl.classList.remove('active');
+            if (isApiAvailable) { setAvailableState(); } else { setUnavailableState(); }
+        }
+
+        function sendMessage() {
+            var message = inputEl.value.trim();
+            if (!message || isSending) return;
+
+            isSending = true;
+            sendBtn.disabled = true;
+
+            addMessage(message, 'user');
+            inputEl.value = '';
+            if (charCount) charCount.textContent = '0 / 2000';
+            showTyping();
+
+            fetch('/chatbot/seller-chat/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify({ message: message }),
+            })
+            .then(function (response) {
+                return response.json().then(function (data) {
+                    hideTyping();
+                    if (response.ok && data.success) {
+                        setAvailableState();
+                        addMessage(data.response, 'bot');
+                        // After a greeting, append a fresh copy of chips at the bottom
+                        if (isGreeting(message) && quickActEl) {
+                            var chipsClone = quickActEl.cloneNode(true);
+                            chipsClone.removeAttribute('id');
+                            chipsClone.style.display = 'flex';  // force visible
+                            chipsClone.style.flexWrap = 'wrap';
+                            chipsClone.style.gap = '8px';
+                            chipsClone.style.padding = '4px 0 8px';
+                            chipsClone.addEventListener('click', function (e) {
+                                var chip = e.target.closest('.chatbot-chip');
+                                if (chip) {
+                                    var msg = chip.getAttribute('data-message');
+                                    if (msg) { inputEl.value = msg; sendMessage(); }
+                                }
+                            });
+                            messagesEl.appendChild(chipsClone);
+                            scrollToBottom();
+                        }
+                    } else {
+                        if (response.status === 503) setUnavailableState();
+                        addMessage(data.error || 'Sorry, something went wrong. Please try again.', 'error');
+                    }
+                });
+            })
+            .catch(function (err) {
+                hideTyping();
+                setUnavailableState();
+                addMessage("Sorry, I couldn't connect to NexCart Seller AI right now. Please try again.", 'error');
+                console.error('NexCart Seller AI error:', err);
+            })
+            .finally(function () {
+                isSending = false;
+                sendBtn.disabled = false;
+                inputEl.focus();
+            });
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+
+        inputEl.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        document.addEventListener('click', function (e) {
+            if (
+                chatWindow.classList.contains('active') &&
+                !chatWindow.contains(e.target) &&
+                !toggleBtn.contains(e.target)
+            ) {
+                chatWindow.classList.remove('active');
+                toggleBtn.classList.remove('is-open');
+            }
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && chatWindow.classList.contains('active')) {
+                chatWindow.classList.remove('active');
+                toggleBtn.classList.remove('is-open');
+            }
+        });
+
+    });
+}());
+</script>

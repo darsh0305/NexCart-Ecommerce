@@ -1,7 +1,8 @@
 import re
 from decimal import Decimal, InvalidOperation
 
-from django.db.models import Avg, Count, Q, Sum
+from django.db.models import Avg, Count, DecimalField, ExpressionWrapper, F, Q, Sum
+from django.db.models.functions import TruncDate
 
 from accounts.models import Address
 from cart.models import Cart
@@ -407,6 +408,258 @@ def build_nexcart_context(user, message=None):
         sections += [
             '==================== LIVE PRODUCT DATA ====================',
             get_product_context(query, limit=10)
+        ]
+
+    return '\n'.join(sections).strip()
+
+
+# =============================================================================
+# SELLER CONTEXT BUILDER
+# =============================================================================
+
+def get_seller_store_context(seller):
+    """Returns basic store info and inventory summary for the seller."""
+    try:
+        profile = seller.seller_profile
+        store_name = profile.store_name
+        store_desc = profile.store_description or 'N/A'
+    except Exception:
+        store_name = seller.get_full_name() or seller.username
+        store_desc = 'N/A'
+
+    products = Product.objects.filter(seller=seller)
+    total = products.count()
+    active = products.filter(status='active', is_active=True).count()
+    low_stock = products.filter(stock__gt=0, stock__lte=5).count()
+    out_of_stock = products.filter(stock=0).count()
+    draft = products.filter(status='draft').count()
+
+    return (
+        f"Store Name: {store_name}\n"
+        f"Store Description: {store_desc}\n"
+        f"Seller Username: {seller.username}\n"
+        f"Seller Email: {seller.email}\n\n"
+        f"=== Inventory Summary ===\n"
+        f"Total Products: {total}\n"
+        f"Active Products: {active}\n"
+        f"Low Stock (1-5 units): {low_stock}\n"
+        f"Out of Stock: {out_of_stock}\n"
+        f"Draft Products: {draft}"
+    )
+
+
+def get_seller_products_context(seller, message=None):
+    """Returns the seller's own product catalog."""
+    qs = Product.objects.filter(seller=seller).select_related('category').order_by('-created_at')
+
+    # Optional search filter
+    if message:
+        normalized = _normalize_query(message)
+        tokens = [
+            w for w in normalized.split()
+            if w and w not in STOP_WORDS and not w.isdigit()
+        ]
+        if tokens:
+            q = Q()
+            for token in tokens:
+                q &= (Q(name__icontains=token) | Q(category__name__icontains=token))
+            qs = qs.filter(q)
+
+    if not qs.exists():
+        return 'No products found in your store catalog.'
+
+    rows = []
+    for p in qs[:15]:
+        cat = p.category.name if p.category else 'Uncategorized'
+        rows.append(
+            f"Product: {p.name} | Category: {cat} | Price: ₹{p.price} "
+            f"| Discount: {p.discount_percentage}% | Stock: {p.stock} | Status: {p.status}"
+        )
+    return '\n'.join(rows)
+
+
+def get_seller_orders_context(seller):
+    """Returns the seller's recent orders."""
+    orders = (
+        Order.objects
+        .filter(items__product__seller=seller)
+        .distinct()
+        .prefetch_related('items', 'items__product')
+        .order_by('-created_at')[:10]
+    )
+
+    if not orders.exists():
+        return 'No orders found for your store.'
+
+    rows = []
+    for order in orders:
+        seller_items = order.items.filter(product__seller=seller)
+        seller_subtotal = sum(item.total_price for item in seller_items)
+        item_names = ', '.join(
+            f"{item.product_name} x{item.quantity}" for item in seller_items
+        )
+        rows.append(
+            f"Order #{order.order_number} | Date: {order.created_at.strftime('%d %b %Y')} "
+            f"| Status: {order.get_status_display()} | Payment: {order.get_payment_status_display()} "
+            f"| Your Revenue: ₹{seller_subtotal} | Items: {item_names}"
+        )
+    return '\n'.join(rows)
+
+
+def get_seller_revenue_context(seller):
+    """Returns revenue and sales summary for the seller."""
+    revenue_expr = ExpressionWrapper(
+        F('quantity') * F('price'),
+        output_field=DecimalField(max_digits=12, decimal_places=2)
+    )
+
+    seller_items = OrderItem.objects.filter(
+        product__seller=seller
+    ).exclude(order__status='cancelled')
+
+    total_revenue = seller_items.aggregate(
+        total=Sum(revenue_expr)
+    )['total'] or Decimal('0.00')
+
+    total_units = seller_items.aggregate(
+        total=Sum('quantity')
+    )['total'] or 0
+
+    total_orders = seller_items.values('order').distinct().count()
+
+    avg_order_value = (
+        total_revenue / total_orders if total_orders else Decimal('0.00')
+    )
+
+    # Paid revenue only
+    paid_revenue = OrderItem.objects.filter(
+        product__seller=seller,
+        order__payment_status='paid'
+    ).aggregate(total=Sum(revenue_expr))['total'] or Decimal('0.00')
+
+    # Top 5 products by revenue
+    top_products = (
+        seller_items
+        .values('product_name')
+        .annotate(revenue=Sum(revenue_expr), units=Sum('quantity'))
+        .order_by('-revenue')[:5]
+    )
+
+    # Daily sales (last 7 days)
+    daily = (
+        seller_items
+        .annotate(sale_date=TruncDate('order__created_at'))
+        .values('sale_date')
+        .annotate(revenue=Sum(revenue_expr), units=Sum('quantity'))
+        .order_by('-sale_date')[:7]
+    )
+
+    rows = [
+        f"Total Revenue (excl. cancelled): ₹{total_revenue:.2f}",
+        f"Confirmed/Paid Revenue: ₹{paid_revenue:.2f}",
+        f"Total Units Sold: {total_units}",
+        f"Total Orders: {total_orders}",
+        f"Average Order Value: ₹{avg_order_value:.2f}",
+        "",
+        "Top Products by Revenue:",
+    ]
+    for p in top_products:
+        rows.append(f"  - {p['product_name']}: ₹{p['revenue']:.2f} ({p['units']} units)")
+
+    rows.append("")
+    rows.append("Recent Daily Sales (last 7 days):")
+    for day in daily:
+        if day['sale_date']:
+            rows.append(
+                f"  - {day['sale_date'].strftime('%d %b %Y')}: "
+                f"₹{day['revenue']:.2f} ({day['units']} units)"
+            )
+
+    return '\n'.join(rows)
+
+
+def determine_seller_intent(message):
+    """
+    Keyword-based intent router for the seller chatbot.
+    Returns a set of intents.
+    """
+    query = (message or '').strip().lower()
+    intents = set()
+
+    if query in ['hi', 'hello', 'hey', 'help', 'who are you']:
+        intents.add('greeting')
+        return intents
+
+    # Revenue / Sales reports
+    if any(w in query for w in ['revenue', 'sales', 'earning', 'income', 'profit', 'report', 'daily', 'monthly']):
+        intents.add('revenue')
+
+    # Orders
+    if any(w in query for w in ['order', 'orders', 'customer order', 'pending', 'shipped', 'delivered', 'cancelled']):
+        intents.add('orders')
+
+    # Inventory / Products
+    if any(w in query for w in ['product', 'products', 'stock', 'inventory', 'catalog', 'low stock', 'out of stock', 'add product', 'edit product']):
+        intents.add('inventory')
+
+    # Store info
+    if any(w in query for w in ['store', 'shop', 'profile', 'account', 'settings']):
+        intents.add('store')
+
+    # If no specific intent, default to store + inventory
+    if not intents:
+        intents.add('store')
+        intents.add('inventory')
+
+    return intents
+
+
+def build_seller_context(seller, message=None):
+    """
+    Build the complete live seller context injected into the Gemini prompt.
+    Only fetches data relevant to the seller's question.
+    """
+    query = (message or '').strip()
+    intents = determine_seller_intent(query)
+
+    sections = []
+
+    if 'greeting' in intents:
+        return 'Seller is greeting you. Provide a helpful welcome message about the seller dashboard.'
+
+    # Always include basic store info
+    sections += [
+        '==================== SELLER STORE INFO ====================',
+        get_seller_store_context(seller),
+        ''
+    ]
+
+    if 'inventory' in intents:
+        sections += [
+            '==================== SELLER PRODUCTS / INVENTORY ====================',
+            get_seller_products_context(seller, message),
+            ''
+        ]
+
+    if 'orders' in intents:
+        sections += [
+            '==================== SELLER ORDERS ====================',
+            get_seller_orders_context(seller),
+            ''
+        ]
+
+    if 'revenue' in intents:
+        sections += [
+            '==================== SELLER REVENUE & SALES ====================',
+            get_seller_revenue_context(seller),
+            ''
+        ]
+
+    if 'store' in intents and 'inventory' not in intents:
+        sections += [
+            '==================== SELLER PRODUCTS / INVENTORY ====================',
+            get_seller_products_context(seller),
+            ''
         ]
 
     return '\n'.join(sections).strip()
